@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSPIRE Training App</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FF6B35">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            max-height: 160px;
+            width: auto;
+            display: inline-block;
+        }
+
+        .page {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.3s;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Login Page */
+        .login-form {
+            margin-top: 50px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #FF6B35;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #FF6B35;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #E55A2B;
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 20px;
+            color: #007AFF;
+            cursor: pointer;
+        }
+
+        /* Search Page */
+        .search-container {
+            position: sticky;
+            top: 90px;
+            background: white;
+            z-index: 99;
+            padding-bottom: 15px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .standards-list {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .standard-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .standard-item:hover {
+            background: #f8f8f8;
+            padding-left: 25px;
+        }
+
+        .standard-title {
+            font-size: 16px;
+            color: #007AFF;
+            font-weight: 500;
+        }
+
+        /* Deficiency Details Page */
+        .back-button {
+            padding: 10px 20px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .deficiency-header {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .deficiency-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .deficiency-meta {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .deficiency-item {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .deficiency-criteria-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        /* Severity Badges */
+        .severity-container {
+            margin-bottom: 15px;
+        }
+
+        .severity-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .severity-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .severity-life-threatening {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .severity-severe {
+            background: #f57c00;
+            color: white;
+        }
+
+        .severity-moderate {
+            background: #fbc02d;
+            color: #333;
+        }
+
+        .severity-low {
+            background: #689f38;
+            color: white;
+        }
+
+        .hcv-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .hcv-fail {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .hcv-pass {
+            background: #4caf50;
+            color: white;
+        }
+
+        .area-label {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .deficiency-details {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .details-title {
+            color: #1976d2;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .deficiency-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+            white-space: pre-wrap;
+        }
+
+        .correction-timeframe {
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-weight: 500;
+            color: #e65100;
+        }
+
+        .image-section {
+            margin-top: 20px;
+        }
+
+        .image-section-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .image-gallery {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .image-placeholder {
+            width: 100px;
+            height: 100px;
+            background: #f0f0f0;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+
+        .image-placeholder:hover {
+            background: #e8e8e8;
+            border-color: #FF6B35;
+        }
+
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Image Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .image-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 85vh;
+            object-fit: contain;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 35px;
+            cursor: pointer;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <img src="logo.png?v=1" alt="NSPIRE Training App" class="logo">
+        </div>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="page active">
+            <form class="login-form" onsubmit="handleLogin(event)">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Login</h2>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <div class="link" onclick="showCreateAccount()">
+                    Create Account - $4.99/month or $45/year
+                </div>
+            </form>
+        </div>
+
+        <!-- Standards Search Page -->
+        <div id="searchPage" class="page">
+            <div class="search-container">
+                <input type="text" class="search-box" id="searchInput" 
+                       placeholder="Search standards or deficiencies..." 
+                       oninput="filterStandards()">
+            </div>
+            <div id="standardsList" class="standards-list">
+                <div class="loading">Loading standards...</div>
+            </div>
+        </div>
+
+        <!-- Deficiency Details Page -->
+        <div id="detailsPage" class="page">
+            <button class="back-button" onclick="showSearchPage()">← Back to Standards</button>
+            <div id="deficiencyDetails"></div>
+        </div>
+
+        <!-- Image Modal -->
+        <div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <span class="modal-close" onclick="closeImageModal()">&times;</span>
+                <img id="modalImage" class="modal-image" src="" alt="Deficiency Image">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // DYNAMICALLY LOAD JSON DATA FROM nspire-data.json
+        // ============================================
+        let nspireData = [];
+
+        // Load data from nspire-data.json when the page loads
+        fetch('nspire-data.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load nspire-data.json');
+                }
+                return response.json();
+            })
+            .then(data => {
+                nspireData = data;
+                displayStandards(); // Update the display once data is loaded
+                console.log('✓ Successfully loaded', data.length, 'standards');
+            })
+            .catch(error => {
+                console.error('Error loading data:', error);
+                const list = document.getElementById('standardsList');
+                if (list) {
+                    list.innerHTML = '<div class="error-message">Error loading nspire-data.json. Please ensure the file exists and is valid JSON.</div>';
+                }
+            });
+
+        let currentStandard = null;
+
+        function initializeApp() {
+            if (nspireData && nspireData.length > 0) {
+                console.log(`✓ App ready with ${nspireData.length} standards`);
+                displayStandards();
+            } else {
+                const list = document.getElementById('standardsList');
+                if (list) {
+                    list.innerHTML = '<div class="error-message">No data loaded. Please check nspire-data.json.</div>';
+                }
+                console.error('✗ No data found. Please check nspire-data.json.');
+            }
+        }
+
+        // Parse severity into area-based badges
+        function parseSeverityByArea(severityText) {
+            if (!severityText) return [];
+            
+            const severities = [];
+            const lines = severityText.split('\n').filter(line => line.trim());
+            
+            lines.forEach(line => {
+                let severity = null;
+                let area = null;
+                let hcv = null;
+                
+                if (line.includes('LIFE THREATENING')) {
+                    severity = 'life-threatening';
+                } else if (line.includes('SEVERE')) {
+                    severity = 'severe';
+                } else if (line.includes('MODERATE')) {
+                    severity = 'moderate';
+                } else if (line.includes('LOW')) {
+                    severity = 'low';
+                }
+                
+                const areaMatch = line.match(/\((UNIT|INSIDE|OUTSIDE)[^)]*\)/);
+                if (areaMatch) {
+                    area = areaMatch[0];
+                }
+                
+                if (line.includes('HCV: FAIL')) {
+                    hcv = 'fail';
+                } else if (line.includes('HCV: PASS')) {
+                    hcv = 'pass';
+                }
+                
+                if (severity && area) {
+                    severities.push({
+                        level: severity,
+                        area: area,
+                        hcv: hcv,
+                        text: line
+                    });
+                }
+            });
+            
+            return severities;
+        }
+
+        function getTimeframe(severityText) {
+            if (!severityText) return null;
+            const match = severityText.match(/(\d+)\s*(HOUR|DAY)/i);
+            if (match) {
+                return `Correction Timeframe: ${match[1]} ${match[2].toLowerCase()}s`;
+            }
+            return null;
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            showSearchPage();
+        }
+
+        function showCreateAccount() {
+            alert('Account creation will be handled through App Store.\nSubscription: $4.99/month or $45/year');
+        }
+
+        function showSearchPage() {
+            showPage('searchPage');
+            displayStandards();
+        }
+
+        function showDetailsPage(standardIndex) {
+            currentStandard = nspireData[standardIndex];
+            currentStandard.index = standardIndex;
+            showPage('detailsPage');
+            displayDeficiencyDetails();
+        }
+
+        function displayStandards() {
+            const list = document.getElementById('standardsList');
+            
+            // Check if data exists
+            if (!nspireData || nspireData.length === 0) {
+                list.innerHTML = '<div class="error-message">No data loaded. Please add your JSON data to the nspireData variable above.</div>';
+                console.error('nspireData is empty. Please paste your JSON data between the brackets.');
+                return;
+            }
+            
+            // Display all standards
+            list.innerHTML = nspireData.map((standard, index) => `
+                <div class="standard-item" onclick="showDetailsPage(${index})">
+                    <div class="standard-title">${standard.standard}</div>
+                </div>
+            `).join('');
+            
+            console.log(`Displayed ${nspireData.length} standards`);
+        }
+
+        function filterStandards() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const list = document.getElementById('standardsList');
+            
+            if (!searchTerm) {
+                displayStandards();
+                return;
+            }
+            
+            const filtered = nspireData.map((standard, index) => {
+                const matchesStandard = standard.standard.toLowerCase().includes(searchTerm);
+                const matchesDeficiency = standard.deficiencies && 
+                    standard.deficiencies.some(def => 
+                        def.criteria && def.criteria.toLowerCase().includes(searchTerm)
+                    );
+                
+                if (matchesStandard || matchesDeficiency) {
+                    return `
+                        <div class="standard-item" onclick="showDetailsPage(${index})">
+                            <div class="standard-title">${standard.standard}</div>
+                        </div>
+                    `;
+                }
+                return '';
+            }).join('');
+            
+            list.innerHTML = filtered || '<div class="error-message">No standards found</div>';
+        }
+
+        function displayDeficiencyDetails() {
+            if (!currentStandard) return;
+            
+            const details = document.getElementById('deficiencyDetails');
+            const standardName = currentStandard.standard.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            
+            let deficienciesHtml = '';
+            if (currentStandard.deficiencies && currentStandard.deficiencies.length > 0) {
+                currentStandard.deficiencies.forEach((def, index) => {
+                    const defNumber = index + 1;
+                    const severities = parseSeverityByArea(def.severity);
+                    const timeframe = getTimeframe(def.severity);
+                    
+                    let criteriaText = def.criteria || '';
+                    const parts = criteriaText.split('\n');
+                    const mainCriteria = parts[0].replace(/^DEFICIENCY \d+:\s*/i, '');
+                    const details = parts.slice(1).join('\n').trim();
+                    
+                    let severityHtml = '';
+                    severities.forEach(sev => {
+                        severityHtml += `
+                            <div class="severity-row">
+                                <span class="severity-badge severity-${sev.level}">
+                                    ${sev.text.split('-')[0].trim()}
+                                </span>
+                                <span class="area-label">${sev.area}</span>
+                                ${sev.hcv ? `<span class="hcv-badge hcv-${sev.hcv}">HCV: ${sev.hcv.toUpperCase()}</span>` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    deficienciesHtml += `
+                        <div class="deficiency-item">
+                            <div class="deficiency-criteria-title">
+                                ${mainCriteria}
+                            </div>
+                            
+                            ${severityHtml ? `<div class="severity-container">${severityHtml}</div>` : ''}
+                            
+                            ${details ? `
+                                <div class="deficiency-details">
+                                    <div class="details-title">MORE INFORMATION</div>
+                                    <div class="deficiency-text">${details}</div>
+                                </div>
+                            ` : ''}
+                            
+                            ${timeframe ? `<div class="correction-timeframe">${timeframe}</div>` : ''}
+                            
+                            <div class="image-section">
+                                <div class="image-section-title">Reference Materials:</div>
+                                <div class="image-gallery">
+                                    <div class="image-placeholder" 
+                                         onclick="showImage('${standardName}_${defNumber}_1')">
+                                        <span>Image 1</span>
+                                    </div>
+                                    <div class="image-placeholder" 
+                                         onclick="showImage('${standardName}_${defNumber}_2')">
+                                        <span>Image 2</span>
+                                    </div>
+                                    <div class="image-placeholder" 
+                                         onclick="showImage('${standardName}_${defNumber}_3')">
+                                        <span>Image 3</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            details.innerHTML = `
+                <div class="deficiency-header">
+                    <div class="deficiency-title">${currentStandard.standard}</div>
+                    <div class="deficiency-meta">
+                        <div><strong>Area:</strong> ${currentStandard.area || 'Not specified'}</div>
+                        <div><strong>Definition:</strong> ${currentStandard.definition || 'Not specified'}</div>
+                        <div><strong>Total Deficiencies:</strong> ${currentStandard.deficiencies ? currentStandard.deficiencies.length : 0}</div>
+                    </div>
+                </div>
+                ${deficienciesHtml}
+            `;
+        }
+
+        function showImage(imageName) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            
+            const imagePath = `images/${imageName}.jpg`;
+            modalImg.src = imagePath;
+            
+            modalImg.onerror = function() {
+                this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="20"%3EImage Not Available%3C/text%3E%3C/svg%3E';
+            };
+            
+            modal.classList.add('active');
+        }
+
+        function closeImageModal(event) {
+            if (!event || event.target === event.currentTarget) {
+                document.getElementById('imageModal').classList.remove('active');
+            }
+        }
+
+        // Simple initialization - NO FILE LOADING
+        window.onload = function() {
+            if (nspireData && nspireData.length > 0) {
+                console.log(`✓ App ready with ${nspireData.length} standards`);
+            } else {
+                console.error('✗ No data found. Please paste your JSON data in the nspireData variable.');
+            }
+        };
+    </script>
+</body>
+</html>
