@@ -6,6 +6,9 @@
     <title>NSPIRE Training App</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#FF6B35">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <style>
         * {
             margin: 0;
@@ -205,8 +208,17 @@
         .severity-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
             margin-bottom: 8px;
+            background: #f5f5f5;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .severity-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .severity-badge {
@@ -243,6 +255,10 @@
             border-radius: 4px;
             font-size: 12px;
             font-weight: bold;
+            margin-left: auto;
+            display: inline-block;
+            min-width: 90px;
+            text-align: center;
         }
 
         .hcv-fail {
@@ -400,7 +416,7 @@
 
         <!-- Login Page -->
         <div id="loginPage" class="page active">
-            <form class="login-form" onsubmit="handleLogin(event)">
+            <form class="login-form" onsubmit="handleLogin(event)" action="javascript:void(0);">
                 <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Login</h2>
                 <div class="form-group">
                     <label class="form-label">Email</label>
@@ -445,6 +461,15 @@
     </div>
 
     <script>
+        // Global function declarations
+        function handleLogin(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            console.log('Handling login...');
+            showSearchPage();
+        }
+
         // ============================================
         // DYNAMICALLY LOAD JSON DATA FROM nspire-data.json
         // ============================================
@@ -493,11 +518,24 @@
             const severities = [];
             const lines = severityText.split('\n').filter(line => line.trim());
             
-            lines.forEach(line => {
-                let severity = null;
-                let area = null;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                console.log('Processing line:', line);
+                
+                // Check for HCV in next line
+                const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
                 let hcv = null;
                 
+                if (nextLine.includes('HCV:FAIL') || nextLine.includes('HCV: FAIL')) {
+                    hcv = 'fail';
+                    i++; // Skip the HCV line since we've processed it
+                } else if (nextLine.includes('HCV:PASS') || nextLine.includes('HCV: PASS')) {
+                    hcv = 'pass';
+                    i++; // Skip the HCV line since we've processed it
+                }
+                
+                // Check for severity level
+                let severity = null;
                 if (line.includes('LIFE THREATENING')) {
                     severity = 'life-threatening';
                 } else if (line.includes('SEVERE')) {
@@ -508,27 +546,19 @@
                     severity = 'low';
                 }
                 
+                // Check for area
                 const areaMatch = line.match(/\((UNIT|INSIDE|OUTSIDE)[^)]*\)/);
-                if (areaMatch) {
-                    area = areaMatch[0];
-                }
-                
-                if (line.includes('HCV: FAIL')) {
-                    hcv = 'fail';
-                } else if (line.includes('HCV: PASS')) {
-                    hcv = 'pass';
-                }
-                
-                if (severity && area) {
+                if (severity && areaMatch) {
                     severities.push({
                         level: severity,
-                        area: area,
+                        area: areaMatch[0],
                         hcv: hcv,
                         text: line
                     });
                 }
-            });
+            }
             
+            console.log('Final severities:', severities);
             return severities;
         }
 
@@ -542,15 +572,29 @@
         }
 
         function showPage(pageId) {
+            console.log('Showing page:', pageId);
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active');
             });
-            document.getElementById(pageId).classList.add('active');
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            } else {
+                console.error('Could not find page:', pageId);
+            }
         }
 
         function handleLogin(event) {
-            event.preventDefault();
+            if (event) {
+                event.preventDefault();
+            }
+            console.log('Handling login...');
             showSearchPage();
+        }
+
+        // Auto-login in development mode
+        window.onload = function() {
+            handleLogin();
         }
 
         function showCreateAccount() {
@@ -640,10 +684,12 @@
                     severities.forEach(sev => {
                         severityHtml += `
                             <div class="severity-row">
-                                <span class="severity-badge severity-${sev.level}">
-                                    ${sev.text.split('-')[0].trim()}
-                                </span>
-                                <span class="area-label">${sev.area}</span>
+                                <div class="severity-content">
+                                    <span class="severity-badge severity-${sev.level}">
+                                        ${sev.text.split('-')[0].trim()}
+                                    </span>
+                                    <span class="area-label">${sev.area}</span>
+                                </div>
                                 ${sev.hcv ? `<span class="hcv-badge hcv-${sev.hcv}">HCV: ${sev.hcv.toUpperCase()}</span>` : ''}
                             </div>
                         `;
@@ -721,12 +767,13 @@
             }
         }
 
-        // Simple initialization - NO FILE LOADING
+        // Initialize the app
         window.onload = function() {
             if (nspireData && nspireData.length > 0) {
                 console.log(`✓ App ready with ${nspireData.length} standards`);
+                handleLogin(); // Auto-login in development mode
             } else {
-                console.error('✗ No data found. Please paste your JSON data in the nspireData variable.');
+                console.error('✗ No data found. Please check nspire-data.json');
             }
         };
     </script>

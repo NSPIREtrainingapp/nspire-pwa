@@ -132,6 +132,15 @@
             display: block;
         }
 
+        .hcv-label {
+            background-color: #2196f3;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 8px;
+            font-size: 0.9em;
+        }
+
         .error {
             color: #d32f2f;
             background: #ffebee;
@@ -221,7 +230,11 @@
                     
                     return `
                         <div class="deficiency-item" data-standard="${standardId}" data-deficiency="${defNumber}">
-                            <div><strong>Deficiency ${defNumber}:</strong> ${def.criteria.split('\n')[0]}</div>
+                            <div>
+                                <strong>Deficiency ${defNumber}:</strong> 
+                                <span class="hcv-label">[${def.hcv || 'N/A'}]</span> 
+                                ${def.criteria.split('\n')[0]}
+                            </div>
                             <div class="image-preview" id="${standardId}_${defNumber}_preview">
                                 ${[1, 2, 3].map(num => {
                                     const key = `${defId}_${num}`;
