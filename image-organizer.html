@@ -11,83 +11,14 @@
             box-sizing: border-box;
         }
 
-            function handleDragLeave(e) {
-            e.currentTarget.style.background = '';
-        }
-
-        function handlePreviewBoxDrop(e, previewBox) {
-            if (!previewBox.querySelector('img')) {  // Only proceed if box is empty
-                if (e.dataTransfer.items) {
-                    // File drop from system
-                    const items = Array.from(e.dataTransfer.items);
-                    const imageItems = items.filter(item => item.kind === 'file' && item.type.startsWith('image/'));
-                    
-                    if (imageItems.length > 0) {
-                        const file = imageItems[0].getAsFile();
-                        const reader = new FileReader();
-                        
-                        reader.onload = (e) => {
-                            const img = document.createElement('img');
-                            img.src = e.target.result;
-                            img.setAttribute('data-filename', file.name);
-                            
-                            const removeBtn = document.createElement('button');
-                            removeBtn.className = 'remove-btn';
-                            removeBtn.innerHTML = '×';
-                            removeBtn.onclick = function() {
-                                previewBox.innerHTML = `Image ${previewBox.dataset.image}`;
-                                processedImages.delete(file.name);
-                            };
-
-                            previewBox.innerHTML = '';
-                            previewBox.appendChild(img);
-                            previewBox.appendChild(removeBtn);
-                            
-                            const deficiencyItem = previewBox.closest('.deficiency-item');
-                            const standardId = deficiencyItem.dataset.standard;
-                            const defNumber = deficiencyItem.dataset.deficiency;
-                            processedImages.set(file.name, `${standardId}_${defNumber}_${previewBox.dataset.image}`);
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                } else {
-                    // Internal drag from dropzone
-                    const imgSrc = e.dataTransfer.getData('text/plain');
-                    const filename = e.dataTransfer.getData('filename');
-                    
-                    if (imgSrc && filename) {
-                        const img = document.createElement('img');
-                        img.src = imgSrc;
-                        img.setAttribute('data-filename', filename);
-                        
-                        const removeBtn = document.createElement('button');
-                        removeBtn.className = 'remove-btn';
-                        removeBtn.innerHTML = '×';
-                        removeBtn.onclick = function() {
-                            previewBox.innerHTML = `Image ${previewBox.dataset.image}`;
-                            processedImages.delete(filename);
-                        };
-
-                        previewBox.innerHTML = '';
-                        previewBox.appendChild(img);
-                        previewBox.appendChild(removeBtn);
-                        
-                        const deficiencyItem = previewBox.closest('.deficiency-item');
-                        const standardId = deficiencyItem.dataset.standard;
-                        const defNumber = deficiencyItem.dataset.deficiency;
-                        processedImages.set(filename, `${standardId}_${defNumber}_${previewBox.dataset.image}`);
-                    }
-                }
-            }
-        }
-
-        function handleFiles(files) {ody {
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #f5f5f5;
             padding: 20px;
             line-height: 1.6;
             height: 100vh;
             margin: 0;
+            overflow: hidden;
         }
 
         .container {
@@ -97,37 +28,25 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            max-height: calc(100vh - 40px);
+            height: calc(100vh - 40px);
             overflow-y: auto;
+            position: relative;
         }
 
         .header {
             text-align: center;
             margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 20px;
+            z-index: 100;
         }
 
         .logo {
             max-height: 160px;
             width: auto;
             margin-bottom: 20px;
-        }
-
-        .dropzone {
-            border: 3px dashed #ccc;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            margin: 20px 0;
-            background: #fafafa;
-            transition: all 0.3s ease;
-            position: sticky;
-            top: 20px;
-            z-index: 100;
-        }
-
-        .dropzone.dragover, .preview-box.dragover {
-            background: #e3f2fd;
-            border-color: #2196f3;
         }
 
         .standard-section {
@@ -172,6 +91,18 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
+            cursor: pointer;
+            background: #fff;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .preview-box.dragover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #2196f3;
         }
 
         .preview-box img {
@@ -193,25 +124,12 @@
             cursor: pointer;
             display: none;
             z-index: 10;
+            font-size: 14px;
+            line-height: 1;
         }
 
         .preview-box:hover .remove-btn {
             display: block;
-        }
-
-        .preview-box {
-            cursor: pointer;
-            background: #fff;
-            transition: all 0.3s ease;
-        }
-
-        .progress {
-            margin-top: 20px;
-            padding: 10px;
-            background: #e8f5e9;
-            border-radius: 4px;
-            text-align: center;
-            color: #2e7d32;
         }
 
         .error {
@@ -222,34 +140,18 @@
             margin: 10px 0;
         }
 
-        button {
-            background: #2196f3;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
 
-        button:hover {
-            background: #1976d2;
-        }
+            .standard-section {
+                padding: 10px;
+            }
 
-        .status {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 4px;
-        }
-
-        .status.success {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .status.error {
-            background: #ffebee;
-            color: #d32f2f;
+            .deficiency-container {
+                margin-left: 10px;
+            }
         }
     </style>
 </head>
@@ -258,11 +160,7 @@
         <div class="header">
             <img src="logo.png" alt="NSPIRE Training App" class="logo">
             <h1>Image Organizer</h1>
-            <p>Drag and drop images directly into the image boxes below</p>
-        </div>
-
-        <div id="progress" class="progress" style="display: none">
-            Processing images...
+            <p>Drag and drop images directly into the boxes below</p>
         </div>
 
         <div id="standardsList"></div>
@@ -270,9 +168,22 @@
 
     <script>
         let nspireData = [];
-        let processedImages = new Map(); // To track which images have been assigned
+        let processedImages = new Map();
+        
+        // Load any previously saved assignments
+        fetch('image-assignments.json')
+            .then(response => response.json())
+            .then(data => {
+                processedImages = new Map(Object.entries(data));
+                // After loading assignments, update the display
+                if (nspireData.length > 0) {
+                    displayStandards();
+                }
+            })
+            .catch(() => {
+                console.log('No previous assignments found');
+            });
 
-        // Load the NSPIRE data
         fetch('nspire-data.json')
             .then(response => response.json())
             .then(data => {
@@ -291,18 +202,42 @@
                 
                 const deficienciesHtml = (standard.deficiencies || []).map((def, defIndex) => {
                     const defNumber = defIndex + 1;
+                    const defId = `${standardId}_${defNumber}`;
+                    
+                    // Check if this deficiency has any unassigned slots
+                    let hasUnassigned = false;
+                    for (let i = 1; i <= 3; i++) {
+                        const key = `${defId}_${i}`;
+                        if (!processedImages.has(key)) {
+                            hasUnassigned = true;
+                            break;
+                        }
+                    }
+                    
+                    // Only show deficiencies with unassigned slots
+                    if (!hasUnassigned) {
+                        return '';
+                    }
+                    
                     return `
-                        <div class="deficiency-item" 
-                             data-standard="${standardId}"
-                             data-deficiency="${defNumber}"
-                             ondragover="handleDragOver(event)"
-                             ondrop="handleDrop(event)"
-                             ondragleave="handleDragLeave(event)">
+                        <div class="deficiency-item" data-standard="${standardId}" data-deficiency="${defNumber}">
                             <div><strong>Deficiency ${defNumber}:</strong> ${def.criteria.split('\n')[0]}</div>
                             <div class="image-preview" id="${standardId}_${defNumber}_preview">
-                                <div class="preview-box" data-image="1" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">Image 1</div>
-                                <div class="preview-box" data-image="2" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">Image 2</div>
-                                <div class="preview-box" data-image="3" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">Image 3</div>
+                                ${[1, 2, 3].map(num => {
+                                    const key = `${defId}_${num}`;
+                                    if (processedImages.has(key)) {
+                                        return ''; // Skip if already assigned
+                                    }
+                                    return `
+                                        <div class="preview-box" 
+                                             data-image="${num}"
+                                             ondragover="handleDragOver(event)" 
+                                             ondrop="handleDrop(event)" 
+                                             ondragleave="handleDragLeave(event)">
+                                            Drag Image ${num} Here
+                                        </div>
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     `;
@@ -317,69 +252,11 @@
                     </div>
                 `;
             }).join('');
-        }
 
-        // Drag and drop handling
-        const dropzone = document.getElementById('dropzone');
-        
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
-
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('dragover');
-        });
-
-        dropzone.addEventListener('drop', handleInitialDrop);
-
-        // File input handling
-        document.getElementById('fileInput').addEventListener('change', (e) => {
-            handleFiles(Array.from(e.target.files));
-        });
-
-        function handleInitialDrop(e) {
-            e.preventDefault();
-            dropzone.classList.remove('dragover');
-            
-            let files = [];
-            if (e.dataTransfer.items) {
-                files = Array.from(e.dataTransfer.items)
-                    .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
-                    .map(item => item.getAsFile());
-            } else {
-                files = Array.from(e.dataTransfer.files)
-                    .filter(file => file.type.startsWith('image/'));
-            }
-
-            handleFiles(files);
-        }
-
-        function handleFiles(files) {
-            document.getElementById('progress').style.display = 'block';
-            
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.setAttribute('data-filename', file.name);
-                    img.style.maxWidth = '100px';
-                    img.style.maxHeight = '100px';
-                    img.draggable = true;
-                    img.addEventListener('dragstart', handleDragStart);
-                    
-                    dropzone.appendChild(img);
-                };
-                reader.readAsDataURL(file);
+            // Add drag and drop event prevention for the container
+            document.querySelector('.container').addEventListener('dragover', (e) => {
+                e.preventDefault();
             });
-
-            document.getElementById('progress').style.display = 'none';
-        }
-
-        function handleDragStart(e) {
-            e.dataTransfer.setData('text/plain', e.target.src);
-            e.dataTransfer.setData('filename', e.target.getAttribute('data-filename'));
         }
 
         function handleDragOver(e) {
@@ -393,94 +270,105 @@
 
         function handleDrop(e) {
             e.preventDefault();
-            e.currentTarget.classList.remove('dragover');
+            e.stopPropagation();
             
             const box = e.currentTarget;
+            box.classList.remove('dragover');
+            
             if (!box.classList.contains('preview-box')) return;
             
-            // Handle file drop
-            if (e.dataTransfer.items) {
-                const items = Array.from(e.dataTransfer.items);
-                const imageItem = items.find(item => item.kind === 'file' && item.type.startsWith('image/'));
-                
-                if (imageItem) {
-                    const file = imageItem.getAsFile();
-                    const reader = new FileReader();
-                    
-                    reader.onload = (e) => {
-                        addImageToBox(box, e.target.result, file.name);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-
-            // Handle both file drops and internal image drops
-            if (e.dataTransfer.items) {
-                // File drop from system
-                const items = Array.from(e.dataTransfer.items);
-                const imageItems = items.filter(item => item.kind === 'file' && item.type.startsWith('image/'));
-                
-                if (imageItems.length > 0) {
-                    const file = imageItems[0].getAsFile();
-                    const reader = new FileReader();
-                    
-                    reader.onload = (e) => {
-                        for (let box of previewBoxes) {
-                            if (!box.querySelector('img')) {
-                                const img = document.createElement('img');
-                                img.src = e.target.result;
-                                img.setAttribute('data-filename', file.name);
-                                
-                                const removeBtn = document.createElement('button');
-                                removeBtn.className = 'remove-btn';
-                                removeBtn.innerHTML = '×';
-                                removeBtn.onclick = function() {
-                                    box.innerHTML = `Image ${box.dataset.image}`;
-                                    processedImages.delete(file.name);
-                                };
-
-                                box.innerHTML = '';
-                                box.appendChild(img);
-                                box.appendChild(removeBtn);
-                                
-                                processedImages.set(file.name, `${standardId}_${defNumber}_${box.dataset.image}`);
-                                break;
-                            }
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                }
-            } else {
-                // Internal drag from dropzone
-                const imgSrc = e.dataTransfer.getData('text/plain');
-                const filename = e.dataTransfer.getData('filename');
-                
-                if (imgSrc && filename) {
-                    for (let box of previewBoxes) {
-                        if (!box.querySelector('img')) {
-                            const img = document.createElement('img');
-                            img.src = imgSrc;
-                            img.setAttribute('data-filename', filename);
-                            
-                            const removeBtn = document.createElement('button');
-                            removeBtn.className = 'remove-btn';
-                            removeBtn.innerHTML = '×';
-                            removeBtn.onclick = function() {
-                                box.innerHTML = `Image ${box.dataset.image}`;
-                                processedImages.delete(filename);
-                            };
-
-                            box.innerHTML = '';
-                            box.appendChild(img);
-                            box.appendChild(removeBtn);
-                            
-                            processedImages.set(filename, `${standardId}_${defNumber}_${box.dataset.image}`);
-                            break;
-                        }
-                    }
-                }
-            }
+            const items = e.dataTransfer.items;
+            if (!items) return;
+            
+            const imageItem = Array.from(items).find(item => item.kind === 'file' && item.type.startsWith('image/'));
+            if (!imageItem) return;
+            
+            const file = imageItem.getAsFile();
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                addImageToBox(box, e.target.result, file.name);
+            };
+            reader.readAsDataURL(file);
         }
+
+        function addImageToBox(box, imgSrc, filename) {
+            if (box.querySelector('img')) return;
+            
+            const img = document.createElement('img');
+            img.src = imgSrc;
+            img.setAttribute('data-filename', filename);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.onclick = function(e) {
+                e.stopPropagation();
+                box.innerHTML = `Drag Image ${box.dataset.image} Here`;
+                processedImages.delete(filename);
+                saveAssignments();
+            };
+
+            box.innerHTML = '';
+            box.appendChild(img);
+            box.appendChild(removeBtn);
+            
+            // Save assignments after adding new image
+            saveAssignments();
+            
+            const deficiencyItem = box.closest('.deficiency-item');
+            const standardId = deficiencyItem.dataset.standard;
+            const defNumber = deficiencyItem.dataset.deficiency;
+            const imageKey = `${standardId}_${defNumber}_${box.dataset.image}`;
+            
+            // Save the file to the images folder
+            const imgCopy = document.createElement('img');
+            imgCopy.src = imgSrc;
+            
+            // Create a canvas to convert the image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            imgCopy.onload = () => {
+                canvas.width = imgCopy.width;
+                canvas.height = imgCopy.height;
+                ctx.drawImage(imgCopy, 0, 0);
+                canvas.toBlob((blob) => {
+                    // Create a download link for the image
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `images/${filename}`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                });
+            };
+            
+            processedImages.set(imageKey, `images/${filename}`);
+        }
+
+        function saveAssignments() {
+            // Convert Map to object for JSON serialization
+            const assignmentsObj = Object.fromEntries(processedImages);
+            
+            // Create a Blob with the JSON data
+            const blob = new Blob([JSON.stringify(assignmentsObj, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create download link
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'image-assignments.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Add save button to header
+        const saveButton = document.createElement('button');
+        saveButton.innerText = 'Save Progress';
+        saveButton.style.marginTop = '10px';
+        saveButton.onclick = saveAssignments;
+        document.querySelector('.header').appendChild(saveButton);
     </script>
 </body>
 </html>
