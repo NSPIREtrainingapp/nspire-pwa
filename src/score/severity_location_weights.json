@@ -1,0 +1,6 @@
+{
+  "LIFE THREATENING": { "UNIT": 60.0, "INSIDE": 54.5, "OUTSIDE": 49.6 },
+  "SEVERE": { "UNIT": 14.8, "INSIDE": 13.4, "OUTSIDE": 12.2 },
+  "MODERATE": { "UNIT": 5.5, "INSIDE": 5.0, "OUTSIDE": 4.5 },
+  "LOW": { "UNIT": 2.4, "INSIDE": 2.2, "OUTSIDE": 2.0 }
+}

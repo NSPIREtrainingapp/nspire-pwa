@@ -405,6 +405,44 @@
             border-radius: 8px;
             text-align: center;
         }
+
+        /* Weighted score UI */
+        .units-row {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .units-row label {
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .units-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .weighted-badge {
+            background: #ffeb3b;
+            color: #333;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        .sample-size-note {
+            font-size: 12px;
+            color: #666;
+        }
+        .loc-score-badge {
+            background: #fff59d;
+        }
     </style>
 </head>
 <body>
@@ -439,6 +477,11 @@
                 <input type="text" class="search-box" id="searchInput" 
                        placeholder="Search standards or deficiencies..." 
                        oninput="filterStandards()">
+                <div class="units-row">
+                    <label for="unitsInput">Total Units on Property</label>
+                    <input id="unitsInput" class="units-input" type="number" min="1" step="1" placeholder="e.g. 100">
+                    <span id="sampleSizeNote" class="sample-size-note"></span>
+                </div>
             </div>
             <div id="standardsList" class="standards-list">
                 <div class="loading">Loading standards...</div>
@@ -447,7 +490,9 @@
 
         <!-- Deficiency Details Page -->
         <div id="detailsPage" class="page">
-            <button class="back-button" onclick="showSearchPage()">← Back to Standards</button>
+            <div style="position:sticky;top:175px;z-index:101;background:white;padding-top:10px;">
+                <button class="back-button" onclick="showSearchPage()">← Back to Standards</button>
+            </div>
             <div id="deficiencyDetails"></div>
         </div>
 
@@ -471,15 +516,15 @@
         }
 
         // ============================================
-        // DYNAMICALLY LOAD JSON DATA FROM nspire-data.json
+    // DYNAMICALLY LOAD JSON DATA FROM nspire_standards.json
         // ============================================
         let nspireData = [];
 
         // Load data from nspire-data.json when the page loads
-        fetch('nspire-data.json')
+        fetch('nspire_standards.json')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to load nspire-data.json');
+                    throw new Error('Failed to load nspire_standards.json');
                 }
                 return response.json();
             })
@@ -487,16 +532,49 @@
                 nspireData = data;
                 displayStandards(); // Update the display once data is loaded
                 console.log('✓ Successfully loaded', data.length, 'standards');
+                // Once standards are loaded, we can render weights-dependent views if weights are ready
+                if (window.__weightsLoaded) {
+                    // no-op, rendering happens upon navigating to details
+                }
             })
             .catch(error => {
                 console.error('Error loading data:', error);
                 const list = document.getElementById('standardsList');
                 if (list) {
-                    list.innerHTML = '<div class="error-message">Error loading nspire-data.json. Please ensure the file exists and is valid JSON.</div>';
+                    list.innerHTML = '<div class="error-message">Error loading nspire_standards.json. Please ensure the file exists and is valid JSON.</div>';
                 }
             });
 
         let currentStandard = null;
+        let weightsFile = null; // loaded from src/score/weights.json
+    let hudSamplingTable = null; // loaded from src/score/hud_sampling_table.json
+    let severityLocationMatrix = null; // optional: src/score/severity_location_weights.json
+
+        // Load weights for the calculator
+        fetch('src/score/weights.json', { cache: 'no-store' })
+            .then(r => r.ok ? r.json() : Promise.reject(new Error('Failed to load weights.json')))
+            .then(json => { weightsFile = json; window.__weightsLoaded = true; })
+            .catch(() => { console.warn('Using default in-memory weights.'); weightsFile = {
+                weights: {
+                    severity: { 'LOW': 0.5, 'MODERATE': 1.0, 'SEVERE': 2.0, 'LIFE THREATENING': 3.0 },
+                    hcv: { 'PASS': 0, 'FAIL': 2.0 },
+                    location: { 'UNIT': 1.5, 'INSIDE': 1.0, 'OUTSIDE': 0.75 },
+                    standardBase: {}
+                },
+                rules: { singleObservationCap: 25 }
+            }; });
+
+        // Load HUD sampling table to derive sample size from total units
+        fetch('src/score/hud_sampling_table.json', { cache: 'no-store' })
+            .then(r => r.ok ? r.json() : Promise.reject(new Error('Failed to load hud_sampling_table.json')))
+            .then(json => { hudSamplingTable = json; })
+            .catch(err => { console.warn('Sampling table not loaded:', err?.message || err); hudSamplingTable = null; });
+
+        // Optional: Load severity-by-location weight matrix if provided
+        fetch('src/score/severity_location_weights.json', { cache: 'no-store' })
+            .then(r => r.ok ? r.json() : Promise.reject('no-matrix'))
+            .then(json => { severityLocationMatrix = json; console.log('Loaded severity-location matrix'); })
+            .catch(() => { severityLocationMatrix = null; });
 
         function initializeApp() {
             if (nspireData && nspireData.length > 0) {
@@ -505,9 +583,10 @@
             } else {
                 const list = document.getElementById('standardsList');
                 if (list) {
-                    list.innerHTML = '<div class="error-message">No data loaded. Please check nspire-data.json.</div>';
+                    list.innerHTML = '<div class="error-message">No data loaded. Please check nspire_standards.json.</div>';
                 }
-                console.error('✗ No data found. Please check nspire-data.json.');
+                console.error('✗ No data found. Please check nspire_standards.json.');
+                list.innerHTML = '<div class="error-message">Error loading nspire_standards.json. Please ensure the file exists and is valid JSON.</div>';
             }
         }
 
@@ -626,7 +705,7 @@
             // Display all standards
             list.innerHTML = nspireData.map((standard, index) => `
                 <div class="standard-item" onclick="showDetailsPage(${index})">
-                    <div class="standard-title">${standard.standard}</div>
+                    <div class="standard-title">${standard.title || standard.id}</div>
                 </div>
             `).join('');
             
@@ -664,82 +743,185 @@
 
         function displayDeficiencyDetails() {
             if (!currentStandard) return;
-            
             const details = document.getElementById('deficiencyDetails');
-            const standardName = currentStandard.standard.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            
             let deficienciesHtml = '';
+                function toUpperKey(s) {
+                    return (s || '').toString().trim().toUpperCase();
+                }
+                function getSampleSize(totalUnits) {
+                    const n = Math.max(1, parseInt(totalUnits || '1', 10) || 1);
+                    if (!Array.isArray(hudSamplingTable) || !hudSamplingTable.length) return 1;
+                    for (const row of hudSamplingTable) {
+                        const min = row.min ?? 1;
+                        const max = row.max;
+                        if (n >= min && (max == null || n <= max)) {
+                            return row.sample || 1;
+                        }
+                    }
+                    return 1;
+                }
+                function getBaseForStandard(standardId) {
+                    const baseMap = weightsFile?.weights?.standardBase || {};
+                    return typeof baseMap[standardId] === 'number' ? baseMap[standardId] : 1;
+                }
+                function computeWeighted(def, std) {
+                    const totalUnitsVal = localStorage.getItem('totalUnits') || document.getElementById('unitsInput')?.value || '1';
+                    const sampleSize = getSampleSize(totalUnitsVal);
+
+                    // Gather candidate groups of {severity, location}
+                    const groups = [];
+                    if (def.severityCellText) {
+                        const lines = def.severityCellText.split('\n').filter(l => l.trim());
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i];
+                            const sevMatch = line.match(/(LOW|MODERATE|SEVERE|LIFE THREATENING)/i);
+                            const locMatch = line.match(/\(([^)]+)\)/);
+                            if (sevMatch && locMatch) {
+                                const sev = toUpperKey(sevMatch[1]);
+                                const locs = locMatch[1].split(/\s*&\s*|\s*,\s*/).map(s => toUpperKey(s.trim()));
+                                locs.forEach(loc => groups.push({ sev, loc }));
+                            }
+                        }
+                    }
+                    if (!groups.length) {
+                        const sev = toUpperKey(def.severity || 'LOW');
+                        const rawLoc = std.location || '';
+                        const locs = rawLoc ? rawLoc.split(/\s*\/\s*/).map(s => s.replace(/\s*UNIT\s*/i, 'UNIT').trim().toUpperCase()) : ['UNIT'];
+                        locs.forEach(loc => groups.push({ sev, loc }));
+                    }
+
+                    const getBaseWeight = (sev, loc) => {
+                        // Single source of truth: severity_location_weights.json
+                        if (severityLocationMatrix && severityLocationMatrix[sev] && typeof severityLocationMatrix[sev][loc] === 'number') return severityLocationMatrix[sev][loc];
+                        return 0;
+                    };
+
+                    // Use worst-case (max) base weight across groups
+                    const baseWeight = groups.reduce((m, g) => Math.max(m, getBaseWeight(g.sev, g.loc)), 0);
+                    if (!sampleSize || sampleSize <= 0) return 0;
+                    const weighted = baseWeight / sampleSize;
+                    return Number.isFinite(weighted) ? weighted : 0;
+                }
+                function getSeverityClass(severity) {
+                    if (!severity) return '';
+                    const s = severity.toLowerCase();
+                    if (s === 'low') return 'severity-low';
+                    if (s === 'moderate') return 'severity-moderate';
+                    if (s === 'severe') return 'severity-severe';
+                    if (s.includes('life')) return 'severity-life-threatening';
+                    return '';
+                }
+            function getHcvClass(hcv) {
+                if (!hcv) return '';
+                const h = hcv.toLowerCase();
+                if (h === 'pass') return 'hcv-pass';
+                if (h === 'fail') return 'hcv-fail';
+                return '';
+            }
             if (currentStandard.deficiencies && currentStandard.deficiencies.length > 0) {
                 currentStandard.deficiencies.forEach((def, index) => {
-                    const defNumber = index + 1;
-                    const severities = parseSeverityByArea(def.severity);
-                    const timeframe = getTimeframe(def.severity);
-                    
-                    let criteriaText = def.criteria || '';
-                    const parts = criteriaText.split('\n');
-                    const mainCriteria = parts[0].replace(/^DEFICIENCY \d+:\s*/i, '');
-                    const details = parts.slice(1).join('\n').trim();
-                    
-                    let severityHtml = '';
-                    severities.forEach(sev => {
-                        severityHtml += `
-                            <div class="severity-row">
-                                <div class="severity-content">
-                                    <span class="severity-badge severity-${sev.level}">
-                                        ${sev.text.split('-')[0].trim()}
-                                    </span>
-                                    <span class="area-label">${sev.area}</span>
+                        let hcv = def.hcv;
+                        if (!hcv || hcv === 'Not specified') {
+                            if (def.severity) {
+                                const s = def.severity.toLowerCase();
+                                if (s === 'low') hcv = 'PASS';
+                                else if (s === 'moderate' || s === 'severe' || s.includes('life')) hcv = 'FAIL';
+                            } else {
+                                hcv = 'FAIL';
+                            }
+                        }
+                        // Helpers to compute per-location score labels
+                        const totalUnitsVal = localStorage.getItem('totalUnits') || document.getElementById('unitsInput')?.value || '1';
+                        const sampleSizeForUI = getSampleSize(totalUnitsVal);
+                        const getBaseWeight = (sev, loc) => {
+                            // Single source of truth: severity_location_weights.json
+                            if (severityLocationMatrix && severityLocationMatrix[sev] && typeof severityLocationMatrix[sev][loc] === 'number') return severityLocationMatrix[sev][loc];
+                            return 0;
+                        };
+                        const locScore = (sev, loc) => {
+                            const base = getBaseWeight(toUpperKey(sev), toUpperKey(loc));
+                            if (!sampleSizeForUI || sampleSizeForUI <= 0) return 0;
+                            const v = base / sampleSizeForUI;
+                            return Number.isFinite(v) ? v : 0;
+                        };
+
+                        // Parse severityCellText for location-based severity labels
+                        let locationLabels = '';
+                        if (def.severityCellText) {
+                            const lines = def.severityCellText.split('\n').filter(l => l.trim());
+                            let locationGroups = [];
+                            lines.forEach(line => {
+                                const sevMatch = line.match(/(LOW|MODERATE|SEVERE|LIFE THREATENING)[^\n]*/i);
+                                const locMatch = line.match(/\(([^)]+)\)/);
+                                const hcvMatch = line.match(/HCV:\s*(PASS|FAIL)/i);
+                                if (sevMatch && locMatch) {
+                                    const sev = sevMatch[1];
+                                    const locs = locMatch[1].split(/\s*&\s*|\s*,\s*/);
+                                    const hcvVal = hcvMatch ? hcvMatch[1].toUpperCase() : hcv;
+                                    const sevClass = getSeverityClass(sev);
+                                    const hcvClassLabel = getHcvClass(hcvVal);
+                                    locs.forEach(loc => {
+                                        const scoreVal = locScore(sev, loc);
+                                        locationGroups.push({
+                                            location: loc.trim(),
+                                            severity: sev,
+                                            severityClass: sevClass,
+                                            hcv: hcvVal,
+                                            hcvClass: hcvClassLabel,
+                        score: scoreVal
+                                        });
+                                    });
+                                }
+                            });
+                            if (locationGroups.length > 0) {
+                                locationGroups.forEach(group => {
+                                    locationLabels += `<div><strong>Location:</strong> <span class='area-label'>${group.location}</span> <span class='severity-badge ${group.severityClass}'>${group.severity}</span> <span class='hcv-badge ${group.hcvClass}'>HCV: ${group.hcv}</span><span class='weighted-badge loc-score-badge' title='Score for this location'>${group.score.toFixed(2)}</span></div>`;
+                                });
+                            }
+                        }
+                        // Fallback single line with a score if no grouped labels
+                        let fallbackLocationLine = '';
+                        if (!locationLabels) {
+                            const sevForFallback = def.severity || 'LOW';
+                            const sevClassFallback = getSeverityClass(sevForFallback);
+                            const rawLoc = currentStandard.location || '';
+                            const firstLoc = rawLoc ? rawLoc.split(/\s*\/\s*/)[0].replace(/\s*UNIT\s*/i, 'UNIT').trim() : (def.location || 'UNIT');
+                            const scoreFallback = locScore(sevForFallback, firstLoc);
+                            fallbackLocationLine = `<div><strong>Location:</strong> <span class='area-label'>${def.location || ''}</span> <span class='severity-badge ${sevClassFallback}'>${sevForFallback}</span> <span class='hcv-badge ${getHcvClass(hcv)}'>HCV: ${hcv}</span><span class='weighted-badge loc-score-badge' title='Score for this location'>${scoreFallback.toFixed(2)}</span></div>`;
+                        }
+                        const weightedScore = computeWeighted(def, currentStandard);
+                        deficienciesHtml += `
+                            <div class="deficiency-item">
+                                <div class="deficiency-criteria-title">
+                                    <strong>${def.title || def.id}</strong>
+
                                 </div>
-                                ${sev.hcv ? `<span class="hcv-badge hcv-${sev.hcv}">HCV: ${sev.hcv.toUpperCase()}</span>` : ''}
+                                <div class="deficiency-meta">
+                                    ${locationLabels || fallbackLocationLine}
+                                    <div><strong>Correction Time:</strong> ${def.correctionTime || 'Not specified'}</div>
+                                </div>
+                                <div class="deficiency-details">
+                                    <div class="details-title">Details</div>
+                                    <div class="deficiency-text">${def.verbatim || ''}</div>
+                                </div>
+                                <div class="image-section">
+                                    <div class="image-section-title">Reference Images:</div>
+                                    <div class="image-gallery">
+                                        <div class="image-placeholder" onclick="showImage('${def.id}_1')"><span>Image 1</span></div>
+                                        <div class="image-placeholder" onclick="showImage('${def.id}_2')"><span>Image 2</span></div>
+                                        <div class="image-placeholder" onclick="showImage('${def.id}_3')"><span>Image 3</span></div>
+                                    </div>
+                                </div>
                             </div>
                         `;
-                    });
-                    
-                    deficienciesHtml += `
-                        <div class="deficiency-item">
-                            <div class="deficiency-criteria-title">
-                                ${mainCriteria}
-                            </div>
-                            
-                            ${severityHtml ? `<div class="severity-container">${severityHtml}</div>` : ''}
-                            
-                            ${details ? `
-                                <div class="deficiency-details">
-                                    <div class="details-title">MORE INFORMATION</div>
-                                    <div class="deficiency-text">${details}</div>
-                                </div>
-                            ` : ''}
-                            
-                            ${timeframe ? `<div class="correction-timeframe">${timeframe}</div>` : ''}
-                            
-                            <div class="image-section">
-                                <div class="image-section-title">Reference Materials:</div>
-                                <div class="image-gallery">
-                                    <div class="image-placeholder" 
-                                         onclick="showImage('${standardName}_${defNumber}_1')">
-                                        <span>Image 1</span>
-                                    </div>
-                                    <div class="image-placeholder" 
-                                         onclick="showImage('${standardName}_${defNumber}_2')">
-                                        <span>Image 2</span>
-                                    </div>
-                                    <div class="image-placeholder" 
-                                         onclick="showImage('${standardName}_${defNumber}_3')">
-                                        <span>Image 3</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
                 });
             }
-            
             details.innerHTML = `
                 <div class="deficiency-header">
-                    <div class="deficiency-title">${currentStandard.standard}</div>
+                    <div class="deficiency-title">${currentStandard.title || currentStandard.id}</div>
                     <div class="deficiency-meta">
-                        <div><strong>Area:</strong> ${currentStandard.area || 'Not specified'}</div>
-                        <div><strong>Definition:</strong> ${currentStandard.definition || 'Not specified'}</div>
+                        <div><strong>Location:</strong> ${currentStandard.location || 'Not specified'}</div>
+                        <div><strong>Summary:</strong> ${currentStandard.summary || 'Not specified'}</div>
                         <div><strong>Total Deficiencies:</strong> ${currentStandard.deficiencies ? currentStandard.deficiencies.length : 0}</div>
                     </div>
                 </div>
@@ -769,11 +951,57 @@
 
         // Initialize the app
         window.onload = function() {
+            // Restore total units from localStorage
+            const unitsEl = document.getElementById('unitsInput');
+            const savedUnits = localStorage.getItem('totalUnits');
+            if (unitsEl) {
+                unitsEl.value = savedUnits || '';
+                unitsEl.addEventListener('input', (e) => {
+                    const v = parseInt(e.target.value || '0', 10);
+                    if (v > 0) {
+                        localStorage.setItem('totalUnits', String(v));
+                    }
+                    // Update sample size note
+                    const note = document.getElementById('sampleSizeNote');
+                    if (note) {
+                        const sample = (function() {
+                            const tv = e.target.value || savedUnits || '1';
+                            if (!hudSamplingTable) return 1;
+                            const n = Math.max(1, parseInt(tv || '1', 10) || 1);
+                            for (const row of hudSamplingTable) {
+                                const min = row.min ?? 1, max = row.max;
+                                if (n >= min && (max == null || n <= max)) return row.sample || 1;
+                            }
+                            return 1;
+                        })();
+                        note.textContent = `Sample size: ${sample}`;
+                    }
+                    // Re-render badges if details page is visible
+                    const detailsVisible = document.getElementById('detailsPage')?.classList.contains('active');
+                    if (detailsVisible) displayDeficiencyDetails();
+                });
+                // Initial sample size note
+                const initialNote = document.getElementById('sampleSizeNote');
+                if (initialNote) {
+                    const tv = unitsEl.value || savedUnits || '1';
+                    const n = Math.max(1, parseInt(tv || '1', 10) || 1);
+                    let sampleInit = 1;
+                    if (Array.isArray(hudSamplingTable)) {
+                        for (const row of hudSamplingTable) {
+                            const min = row.min ?? 1, max = row.max;
+                            if (n >= min && (max == null || n <= max)) { sampleInit = row.sample || 1; break; }
+                        }
+                    }
+                    initialNote.textContent = `Sample size: ${sampleInit}`;
+                }
+            }
+
             if (nspireData && nspireData.length > 0) {
                 console.log(`✓ App ready with ${nspireData.length} standards`);
                 handleLogin(); // Auto-login in development mode
             } else {
                 console.error('✗ No data found. Please check nspire-data.json');
+                console.error('✗ No data found. Please check nspire_standards.json');
             }
         };
     </script>

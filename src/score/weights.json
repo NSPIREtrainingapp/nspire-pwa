@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "description": "Default weights for HUD Weighted Calculator. Adjust as needed.",
+  "weights": {
+    "severity": {
+      "LOW": 0.5,
+      "MODERATE": 1.0,
+      "SEVERE": 2.0,
+      "LIFE THREATENING": 3.0
+    },
+    "hcv": {
+      "PASS": 0,
+      "FAIL": 2.0
+    },
+    "location": {
+      "UNIT": 1.5,
+      "INSIDE": 1.0,
+      "OUTSIDE": 0.75
+    },
+    "standardBase": {
+      "STD-01": 1,
+      "STD-02": 1,
+      "STD-03": 1,
+      "STD-04": 1,
+      "STD-05": 1,
+      "STD-06": 1,
+      "STD-07": 1,
+      "STD-08": 1,
+      "STD-09": 1,
+      "STD-10": 1,
+      "STD-11": 1,
+      "STD-12": 1,
+      "STD-13": 1,
+      "STD-14": 1,
+      "STD-15": 1,
+      "STD-16": 1,
+      "STD-17": 1,
+      "STD-18": 1,
+      "STD-19": 1,
+      "STD-20": 1,
+      "STD-21": 1,
+      "STD-22": 1,
+      "STD-23": 1,
+      "STD-24": 1,
+      "STD-25": 1,
+      "STD-26": 1,
+      "STD-27": 1,
+      "STD-28": 1,
+      "STD-29": 1,
+      "STD-30": 1,
+      "STD-31": 1,
+      "STD-32": 1,
+      "STD-33": 1,
+      "STD-34": 1,
+      "STD-35": 1,
+      "STD-36": 1,
+      "STD-37": 1,
+      "STD-38": 1,
+      "STD-39": 1,
+      "STD-40": 1,
+      "STD-41": 1,
+      "STD-42": 1,
+      "STD-43": 1,
+      "STD-44": 1,
+      "STD-45": 1,
+      "STD-46": 1,
+      "STD-47": 1,
+      "STD-48": 1,
+      "STD-49": 1,
+      "STD-50": 1
+    }
+  },
+  "rules": {
+    "singleObservationCap": 25,
+    "totalCap": 1000,
+    "hcvFailOverrideValue": null
+  }
+}
