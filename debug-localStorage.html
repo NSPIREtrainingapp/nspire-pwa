@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug localStorage</title>
+</head>
+<body>
+    <h1>localStorage Debug</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        // List all localStorage keys first
+        output.innerHTML = '<h3>All localStorage keys:</h3><ul>';
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            output.innerHTML += `<li><strong>${key}</strong>: ${value.length} characters</li>`;
+        }
+        output.innerHTML += '</ul>';
+        
+        // Check what's in localStorage
+        const stored = localStorage.getItem('nspireImageAssignmentsV1');
+        
+        if (stored) {
+            output.innerHTML += `
+                <h2>Found nspireImageAssignmentsV1:</h2>
+                <p><strong>Raw length:</strong> ${stored.length}</p>
+                <h3>First 2000 characters:</h3>
+                <pre style="background:#f5f5f5; padding:10px; overflow:auto; max-height:300px; white-space: pre-wrap;">${stored.substring(0, 2000)}</pre>
+            `;
+            
+            try {
+                const parsed = JSON.parse(stored);
+                output.innerHTML += `
+                    <h3>Parsed data info:</h3>
+                    <p><strong>Type:</strong> ${typeof parsed}</p>
+                    <p><strong>Is Array:</strong> ${Array.isArray(parsed)}</p>
+                    <p><strong>Keys count:</strong> ${Object.keys(parsed).length}</p>
+                    
+                    <h3>First 10 entries:</h3>
+                    <pre style="background:#f0f0f0; padding:10px; overflow:auto; max-height:400px;">
+                `;
+                
+                let count = 0;
+                for (const [key, value] of Object.entries(parsed)) {
+                    if (count < 10) {
+                        output.innerHTML += `${key}: ${JSON.stringify(value, null, 2)}\n`;
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+                output.innerHTML += `</pre>`;
+            } catch (e) {
+                output.innerHTML += `<p><strong>Error parsing:</strong> ${e}</p>`;
+            }
+        } else {
+            output.innerHTML += '<p><strong>❌ No localStorage data found for "nspireImageAssignmentsV1"</strong></p>';
+        }
+    </script>
+</body>
+</html>

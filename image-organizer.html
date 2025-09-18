@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NSPIRE Image Organizer (Lean)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:10px; background:#f7f7f7; }
+    header { position:sticky; top:0; background:#fff; padding:8px 10px; border:1px solid #ddd; z-index:5; }
+    header h1 { margin:4px 0 6px; font-size:20px; }
+    header .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+    button { cursor:pointer; padding:4px 10px; font-size:13px; }
+    #stats { font-size:12px; color:#333; margin-top:4px; }
+    #standards { margin-top:10px; }
+    .standard { border:1px solid #ddd; background:#fff; margin-bottom:8px; }
+    .standard > .title { background:#eee; padding:6px 8px; font-weight:bold; font-size:13px; }
+    .def { border-top:1px solid #eee; padding:6px 8px; }
+    .def h4 { margin:0 0 4px; font-size:13px; }
+    .slots { display:flex; gap:6px; flex-wrap:wrap; }
+    .slot { width:90px; height:90px; border:2px dashed #bbb; font-size:11px; display:flex; align-items:center; justify-content:center; text-align:center; background:#fafafa; position:relative; }
+    .slot.drag { background:#dff0ff; border-color:#2196f3; }
+  .slot img { max-width:100%; max-height:100%; object-fit:cover; pointer-events:none; }
+    .rm { position:absolute; top:2px; right:2px; background:#c62828; color:#fff; border:none; width:18px; height:18px; font-size:12px; line-height:1; cursor:pointer; display:none; }
+    .slot:hover .rm { display:block; }
+    #autosave { font-size:11px; color:#2e7d32; }
+    .controls-sep { flex-basis:100%; height:0; }
+    .status { padding:8px; margin:8px 0; border-radius:4px; font-size:12px; display:none; }
+    .status.info { background:#e3f2fd; color:#1976d2; border:1px solid #bbdefb; }
+    .status.success { background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; }
+    .status.error { background:#ffebee; color:#d32f2f; border:1px solid #ffcdd2; }
+    .optimization-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:11px; }
+    .optimization-controls label { display:flex; align-items:center; gap:4px; }
+    .optimization-controls input, .optimization-controls select { font-size:11px; padding:2px 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NSPIRE Image Organizer</h1>
+    <div class="row">
+      <button id="btnSave">Save JSON</button>
+      <button id="btnSaveEmbedded">Save Embedded</button>
+      <button id="btnSaveForProduction">Export for Production</button>
+      <button id="btnVerifyFiles">Verify Image Files</button>
+      <button id="btnLoad">Load JSON</button>
+      <button id="btnReloadStandards">Reload Standards</button>
+      <button id="btnReset" style="background:#ffe0e0;">Reset All</button>
+      <button id="btnOpenImages" style="background:#f0f0f0;">Open Images Folder</button>
+      <span id="autosave">Autosave: …</span>
+      <div class="controls-sep"></div>
+      <div id="stats">Standards: <span id="sCount">0</span> | Defs: <span id="dCount">0</span> | Filled Slots: <span id="fCount">0</span>/<span id="expCount">0</span> | Complete: <span id="cCount">0</span></div>
+      <div style="font-size:11px; color:#666; margin-top:2px;">💡 Drag & drop images directly into slots. Files will be auto-optimized and downloaded with organized names.</div>
+      <div class="controls-sep"></div>
+      <div class="optimization-controls">
+        <label><input type="checkbox" id="enableOptimization" checked> Optimize Images</label>
+        <label>Max Size: <input type="number" id="maxWidth" value="800" min="200" max="2000" step="50">×<input type="number" id="maxHeight" value="600" min="200" max="2000" step="50"></label>
+        <label>Quality: <input type="range" id="quality" min="0.3" max="1.0" step="0.05" value="0.85"><span id="qualityValue">85%</span></label>
+        <label>Format: 
+          <select id="format">
+            <option value="auto">Auto (WebP/JPEG)</option>
+            <option value="webp">WebP</option>
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+          </select>
+        </label>
+        <button id="presetHigh" style="font-size:10px; padding:2px 6px;">High Quality</button>
+        <button id="presetWeb" style="font-size:10px; padding:2px 6px;">Web Optimized</button>
+        <button id="presetSmall" style="font-size:10px; padding:2px 6px;">Small Files</button>
+      </div>
+    </div>
+    <div id="status" class="status"></div>
+  </header>
+  <div id="standards"></div>
+  <input type="file" id="fileLoad" style="display:none" accept="application/json" />
+
+  <script>
+  // Minimal, fail-focused implementation (no UI changes)
+  const LSK = 'nspireImageAssignmentsV1';
+  const LSMK = 'nspireImageAssignmentsMetaV1';
+  let standards = [];
+  const assignments = new Map(); // canonicalKey -> {src, filename}
+
+  // Image optimization settings
+  const imageOptimization = {
+    maxWidth: 800,
+    maxHeight: 600,
+    quality: 0.85,
+    format: 'webp', // 'webp', 'jpeg', 'png', or 'auto'
+    enableOptimization: true
+  };
+
+  // Image optimization functionality
+  async function optimizeImage(file) {
+    if (!imageOptimization.enableOptimization) {
+      return { blob: file, wasOptimized: false };
+    }
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      img.onload = () => {
+        // Calculate new dimensions while maintaining aspect ratio
+        const { width: newWidth, height: newHeight } = calculateOptimalSize(
+          img.width, 
+          img.height, 
+          imageOptimization.maxWidth, 
+          imageOptimization.maxHeight
+        );
+
+        // Set canvas size
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        // Draw and resize image
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        // Determine output format
+        let outputFormat = imageOptimization.format;
+        if (outputFormat === 'auto') {
+          // Use WebP if supported, otherwise JPEG
+          outputFormat = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0 ? 'webp' : 'jpeg';
+        }
+
+        const mimeType = `image/${outputFormat}`;
+        
+        // Convert to blob with compression
+        canvas.toBlob((blob) => {
+          const wasOptimized = blob.size < file.size || newWidth < img.width || newHeight < img.height;
+          resolve({ 
+            blob, 
+            wasOptimized,
+            originalSize: file.size,
+            newSize: blob.size,
+            originalDimensions: { width: img.width, height: img.height },
+            newDimensions: { width: newWidth, height: newHeight },
+            format: outputFormat
+          });
+        }, mimeType, imageOptimization.quality);
+      };
+
+      img.onerror = () => {
+        // If image optimization fails, return original file
+        resolve({ blob: file, wasOptimized: false, error: 'Failed to load image for optimization' });
+      };
+
+      // Load the image
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function calculateOptimalSize(currentWidth, currentHeight, maxWidth, maxHeight) {
+    // If image is already smaller than max dimensions, keep original size
+    if (currentWidth <= maxWidth && currentHeight <= maxHeight) {
+      return { width: currentWidth, height: currentHeight };
+    }
+
+    // Calculate scaling factor to fit within max dimensions
+    const scaleX = maxWidth / currentWidth;
+    const scaleY = maxHeight / currentHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return {
+      width: Math.floor(currentWidth * scale),
+      height: Math.floor(currentHeight * scale)
+    };
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  // File copying functionality
+  async function copyImageToFolder(file, key) {
+    try {
+      // Show status
+      updateStatus('Optimizing and preparing image...', 'info');
+      
+      // Optimize the image first
+      const optimizationResult = await optimizeImage(file);
+      const { blob, wasOptimized, originalSize, newSize, originalDimensions, newDimensions, format, error } = optimizationResult;
+      
+      if (error) {
+        console.warn('Image optimization failed:', error);
+        updateStatus(`Warning: ${error}. Using original file.`, 'info');
+      }
+
+      // Generate organized filename with proper extension
+      const newFilename = generateFilename(key, file.name, format || 'jpg');
+      
+      // Copy file using the optimized version
+      await copyWithFallback(blob, newFilename, key, file.name, wasOptimized ? {
+        originalSize,
+        newSize,
+        originalDimensions,
+        newDimensions,
+        format
+      } : null);
+      
+    } catch (error) {
+      console.error('Error processing image:', error);
+      updateStatus(`Error processing image: ${error.message}`, 'error');
+    }
+  }
+
+  function generateFilename(key, originalName, outputFormat) {
+    // Extract deficiency ID and slot from key (format: defId_slot)
+    const parts = key.split('_');
+    const slot = parts.pop();
+    const defId = parts.join('_');
+    
+    // Determine output extension
+    let ext = 'jpg'; // default
+    if (outputFormat) {
+      ext = outputFormat === 'jpeg' ? 'jpg' : outputFormat;
+    } else {
+      ext = originalName.split('.').pop() || 'jpg';
+    }
+    
+    // Create organized filename: deficiencyId_slot_originalName
+    const baseName = originalName.split('.')[0] || 'image';
+    const cleanBaseName = baseName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    return `${defId}_slot${slot}_${cleanBaseName}.${ext}`;
+  }
+
+  async function copyWithFileSystemAPI(file, newFilename, key) {
+    // This would require user permission to write to the images folder
+    // For now, we'll use the fallback method and provide instructions
+    await copyWithFallback(file, newFilename, key);
+  }
+
+  async function copyWithFallback(blob, newFilename, key, originalName, optimizationInfo) {
+    // Create a download link to save the file to images folder
+    const url = URL.createObjectURL(blob);
+    
+    // Create download link
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `images/${newFilename}`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Also read the file for immediate display (using data URL as fallback)
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      // Store with relative path to images folder (for future use) and data URL (for immediate display)
+      assignments.set(key, {
+        src: ev.target.result, // Use data URL for immediate display
+        targetPath: `images/${newFilename}`, // Store intended file path
+        filename: newFilename,
+        originalName: originalName || blob.name,
+        optimizationInfo
+      });
+      persist('add-with-copy');
+      render();
+      
+      // Create detailed success message
+      let message = `✓ Image ready for download as images/${newFilename}`;
+      if (optimizationInfo) {
+        const { originalSize, newSize, originalDimensions, newDimensions, format } = optimizationInfo;
+        const sizeReduction = ((originalSize - newSize) / originalSize * 100).toFixed(1);
+        message += `\n📊 Optimized: ${formatFileSize(originalSize)} → ${formatFileSize(newSize)} (${sizeReduction}% smaller)`;
+        message += `\n📐 Resized: ${originalDimensions.width}×${originalDimensions.height} → ${newDimensions.width}×${newDimensions.height}`;
+        message += `\n🎨 Format: ${format.toUpperCase()}`;
+      }
+      updateStatus(message, 'success');
+    };
+    reader.readAsDataURL(blob);
+  }
+
+  function updateStatus(message, type = 'info') {
+    const statusEl = document.getElementById('status');
+    if (statusEl) {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`;
+      statusEl.style.display = 'block';
+      
+      // Auto-hide after 5 seconds for success/info messages
+      if (type !== 'error') {
+        setTimeout(() => {
+          statusEl.style.display = 'none';
+        }, 5000);
+      }
+    }
+  }
+
+  // Build canonical key from deficiency id and slot number
+  function k(defId, slot){
+    return `${defId}_${slot}`;
+  }
+
+  const slugify = s => (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+
+  function normalizeIncoming(obj){
+    if(!obj) return;
+    const setEntry = (key, val)=>{
+      if(!key) return;
+      let src = '';
+      let filename = '';
+      if(val && typeof val === 'object'){
+        if(typeof val.embedded === 'string' && val.embedded.startsWith('data:image')){
+          src = val.embedded;
+        } else if(typeof val.src === 'string'){
+          src = val.src;
+        } else if(typeof val.path === 'string'){
+          src = val.path;
+        }
+        filename = val.filename || '';
+      } else if (typeof val === 'string'){
+        src = val;
+      }
+      if(src){
+        if(!filename){ filename = (src.split('/').pop()||'image').split('?')[0]; }
+        assignments.set(key, { src, filename });
+      }
+    };
+    if(obj instanceof Map){
+      for(const [k,v] of obj.entries()) setEntry(k,v);
+    } else if(Array.isArray(obj)){
+      for(const [k,v] of obj) setEntry(k,v);
+    } else if (typeof obj === 'object'){
+      for(const [k,v] of Object.entries(obj)) setEntry(k,v);
+    }
+  }
+
+  function render(){
+    const host = document.getElementById('standards');
+    const html = standards.map(st=>{
+      const defs = (st.deficiencies||[]).map(d=>{
+        let slots='';
+        for(let i=1;i<=3;i++){
+          const idKey = k(d.id,i);
+          const val = assignments.get(idKey);
+          if(val){
+            const src = typeof val==='string'? val : (val.src||val.path||'');
+            const fn = (val && val.filename) || (src.split('/').pop());
+            // Handle both data URLs and file paths
+            const displaySrc = src.startsWith('data:') ? src : src;
+            slots += `<div class="slot" data-k="${idKey}" data-slot="${i}"><button class="rm" data-rm="${idKey}">×</button><img src="${displaySrc}" alt="${fn}" /></div>`;
+          } else {
+            slots += `<div class="slot" data-k="${idKey}" data-slot="${i}">Drop ${i}</div>`;
+          }
+        }
+        return `<div class="def" data-def="${d.id}"><h4>${d.title||d.id} <span style="color:#777;font-weight:normal">(${d.id})</span></h4><div class="slots">${slots}</div></div>`;
+      }).join('');
+      return `<div class="standard"><div class="title">${st.title||st.id}</div>${defs}</div>`;
+    }).join('');
+    host.innerHTML = html;
+    attachEvents();
+    statCounts();
+  }
+
+  function attachEvents(){
+    // Global guards: prevent navigation on external drops
+    window.addEventListener('dragover', e=> e.preventDefault());
+    window.addEventListener('drop', e=> { if(!(e.target && e.target.closest && e.target.closest('.slot'))) e.preventDefault(); });
+    document.querySelectorAll('.slot').forEach(el=>{
+      el.addEventListener('dragover', e=>{e.preventDefault(); el.classList.add('drag');});
+      el.addEventListener('dragleave', ()=> el.classList.remove('drag'));
+      el.addEventListener('drop', e=>{
+        e.preventDefault(); el.classList.remove('drag');
+        const dt = e.dataTransfer || {};
+        const files = Array.from(dt.files||[]);
+        const isImgName = (n)=> /\.(png|jpe?g|webp|gif|bmp|tiff?|heic|heif)$/i.test(n||'');
+        const file = files.find(f=> (f.type && f.type.startsWith('image/')) || isImgName(f.name));
+        if(file){
+          copyImageToFolder(file, el.dataset.k);
+          return;
+        }
+        // Fallback: accept image URL drops (from browser tabs)
+        const fromHtml = (html)=>{ const m = (html||'').match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i); return m? m[1]: null; };
+        let url = (typeof dt.getData==='function' && (dt.getData('text/uri-list') || dt.getData('text/plain'))) || '';
+        if(!url && dt.items && dt.items.length){
+          for(const it of dt.items){ if(it.kind==='string'){ it.getAsString(s=>{ const u=(s||'').trim(); const htmlSrc = fromHtml(u); const final = htmlSrc || u; if(/^https?:\/\//i.test(final) || /^data:image\//i.test(final)){ const fn = (final.split('/').pop()||'dropped').split('?')[0]; assignments.set(el.dataset.k, {src:final, filename:fn}); persist('add-url'); render(); } }); break; } }
+          return;
+        }
+        const tryUrl = url || fromHtml(typeof dt.getData==='function' ? dt.getData('text/html'): '');
+        if(tryUrl && (/^https?:\/\//i.test(tryUrl) || /^data:image\//i.test(tryUrl))){
+          const fn = (tryUrl.split('/').pop()||'dropped').split('?')[0];
+          assignments.set(el.dataset.k, {src:tryUrl, filename:fn});
+          persist('add-url');
+          render();
+        }
+      });
+    });
+    document.querySelectorAll('.rm').forEach(btn=> btn.addEventListener('click', ()=>{ assignments.delete(btn.dataset.rm); persist('remove'); render(); }));
+  }
+
+  async function loadStandards(){
+    for(const f of ['nspire-data.json','nspire_standards.json']){
+      try {
+        const res = await fetch(f + '?v=' + Date.now(), { cache:'no-store' });
+        if(!res.ok) continue; const txt = await res.text(); if(!txt.trim()) continue; const json = JSON.parse(txt); if(Array.isArray(json)&&json.length){ standards=json; break;}
+      } catch(_){ }
+    }
+  }
+
+  function persist(reason){
+    try{
+      const obj = Object.fromEntries(assignments);
+      localStorage.setItem(LSK, JSON.stringify(obj));
+      localStorage.setItem(LSMK, JSON.stringify({ reason, ts: Date.now() }));
+      updateAutosave();
+    }catch(err){ console.error('persist failed:', err); }
+  }
+
+  function loadAutosave(){
+    try{
+      const raw = localStorage.getItem(LSK);
+      if(!raw) return;
+      normalizeIncoming(JSON.parse(raw));
+    }catch(err){ console.warn('loadAutosave failed:', err); }
+  }
+
+  function updateAutosave(){
+    const el = document.getElementById('autosave');
+    try{
+      const meta = JSON.parse(localStorage.getItem(LSMK)||'{}');
+      if(meta && meta.ts){
+        const d = new Date(meta.ts);
+        el.textContent = `Autosave: ${d.toLocaleString()} (${meta.reason||'update'})`;
+      } else {
+        el.textContent = 'Autosave: ready';
+      }
+    }catch{ if(el) el.textContent = 'Autosave: ready'; }
+  }
+
+  function statCounts(){
+    try{
+      const sCount = standards.length;
+      let dCount = 0; standards.forEach(st => dCount += (st.deficiencies||[]).length);
+      const exp = dCount * 3;
+      const defSet = new Set();
+      standards.forEach(st => (st.deficiencies||[]).forEach(d => defSet.add(d.id)));
+      let filled = 0;
+      for(const key of assignments.keys()){
+        const m = String(key).match(/^(.*)_([123])$/); if(m && defSet.has(m[1])) filled++;
+      }
+      let complete = 0;
+      standards.forEach(st => (st.deficiencies||[]).forEach(d => { if([1,2,3].every(i => assignments.has(k(d.id,i)))) complete++; }));
+      const byId = id => document.getElementById(id);
+      const set = (id, v) => { const el = byId(id); if(el) el.textContent = String(v); };
+      set('sCount', sCount); set('dCount', dCount); set('fCount', filled); set('expCount', exp); set('cCount', complete);
+    }catch(err){ console.warn('statCounts failed:', err); }
+  }
+
+  function savePlain(){
+    const blob = new Blob([JSON.stringify(Object.fromEntries(assignments),null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='image-assignments.json'; a.click(); URL.revokeObjectURL(a.href); persist('manual-save');
+  }
+  function saveEmbedded(){
+    const out={}; assignments.forEach((v,k)=>{ out[k]= (typeof v==='string')? v : {filename:v.filename, embedded:v.src}; });
+    const blob = new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='image-assignments-embedded.json'; a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  function saveForProduction(){
+    const productionData = generateProductionExport();
+    const blob = new Blob([JSON.stringify(productionData,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='nspire-training-data.json'; a.click(); URL.revokeObjectURL(a.href);
+    updateStatus(`✓ Production data exported with ${Object.keys(productionData.imageAssignments).length} assignments`, 'success');
+  }
+
+  function generateProductionExport() {
+    // Create comprehensive export for integration into main training app
+    const imageAssignments = {};
+    const imageMetadata = {};
+    const assignmentStats = {
+      totalAssignments: 0,
+      completedDeficiencies: 0,
+      totalDeficiencies: 0,
+      standardsWithImages: 0,
+      totalStandards: standards.length,
+      exportTimestamp: new Date().toISOString()
+    };
+
+    // Process assignments
+    assignments.forEach((assignment, key) => {
+      const [deficiencyId, slot] = key.split('_').slice(-2);
+      const baseDefId = key.replace(`_${slot}`, '');
+      
+      imageAssignments[key] = {
+        imagePath: assignment.targetPath || `images/${assignment.filename}`,
+        filename: assignment.filename,
+        originalName: assignment.originalName,
+        slot: parseInt(slot),
+        deficiencyId: baseDefId
+      };
+
+      // Store metadata if available
+      if (assignment.optimizationInfo) {
+        imageMetadata[assignment.filename] = {
+          originalSize: assignment.optimizationInfo.originalSize,
+          optimizedSize: assignment.optimizationInfo.newSize,
+          dimensions: assignment.optimizationInfo.newDimensions,
+          format: assignment.optimizationInfo.format,
+          compressionRatio: assignment.optimizationInfo.originalSize ? 
+            ((assignment.optimizationInfo.originalSize - assignment.optimizationInfo.newSize) / assignment.optimizationInfo.originalSize) : 0
+        };
+      }
+
+      assignmentStats.totalAssignments++;
+    });
+
+    // Calculate completion stats
+    const deficiencyCompletionMap = new Map();
+    standards.forEach(standard => {
+      (standard.deficiencies || []).forEach(def => {
+        assignmentStats.totalDeficiencies++;
+        const slotsWithImages = [1, 2, 3].filter(slot => assignments.has(`${def.id}_${slot}`)).length;
+        if (slotsWithImages > 0) {
+          deficiencyCompletionMap.set(def.id, slotsWithImages);
+          if (slotsWithImages === 3) {
+            assignmentStats.completedDeficiencies++;
+          }
+        }
+      });
+    });
+
+    // Count standards with images
+    const standardsWithImages = new Set();
+    standards.forEach(standard => {
+      (standard.deficiencies || []).forEach(def => {
+        if (deficiencyCompletionMap.has(def.id)) {
+          standardsWithImages.add(standard.id || standard.standard);
+        }
+      });
+    });
+    assignmentStats.standardsWithImages = standardsWithImages.size;
+
+    return {
+      version: "1.0",
+      exportedFrom: "NSPIRE Image Organizer",
+      exportTimestamp: assignmentStats.exportTimestamp,
+      imageAssignments,
+      imageMetadata,
+      assignmentStats,
+      standards: standards // Include full standards data for reference
+    };
+  }
+
+  async function verifyImageFiles() {
+    updateStatus('Verifying image files...', 'info');
+    const verificationResults = {
+      totalAssignments: 0,
+      foundFiles: 0,
+      missingFiles: [],
+      duplicateFiles: new Map(),
+      unusedFiles: [],
+      errors: []
+    };
+
+    try {
+      // Check each assignment
+      for (const [key, assignment] of assignments.entries()) {
+        verificationResults.totalAssignments++;
+        const imagePath = assignment.targetPath || `images/${assignment.filename}`;
+        
+        try {
+          // Try to load the image to verify it exists and is valid
+          const response = await fetch(imagePath, { method: 'HEAD' });
+          if (response.ok) {
+            verificationResults.foundFiles++;
+          } else {
+            verificationResults.missingFiles.push({
+              key,
+              filename: assignment.filename,
+              path: imagePath,
+              deficiencyId: key.split('_').slice(0, -1).join('_')
+            });
+          }
+        } catch (error) {
+          verificationResults.missingFiles.push({
+            key,
+            filename: assignment.filename,
+            path: imagePath,
+            error: error.message
+          });
+        }
+      }
+
+      // Generate verification report
+      const reportBlob = new Blob([JSON.stringify(verificationResults, null, 2)], {type: 'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(reportBlob);
+      a.download = 'image-verification-report.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+
+      const successRate = ((verificationResults.foundFiles / verificationResults.totalAssignments) * 100).toFixed(1);
+      updateStatus(`✓ Verification complete: ${verificationResults.foundFiles}/${verificationResults.totalAssignments} files found (${successRate}%). Report downloaded.`, 
+        verificationResults.missingFiles.length === 0 ? 'success' : 'error');
+
+    } catch (error) {
+      updateStatus(`Error during verification: ${error.message}`, 'error');
+    }
+  }
+  function loadFromFile(file){ const r=new FileReader(); r.onload=e=>{ try{ normalizeIncoming(JSON.parse(e.target.result)); persist('import'); render(); }catch{ alert('Invalid JSON'); } }; r.readAsText(file); }
+
+  document.getElementById('btnSave').onclick = savePlain;
+  document.getElementById('btnSaveEmbedded').onclick = saveEmbedded;
+  document.getElementById('btnSaveForProduction').onclick = saveForProduction;
+  document.getElementById('btnVerifyFiles').onclick = verifyImageFiles;
+  document.getElementById('btnLoad').onclick = () => document.getElementById('fileLoad').click();
+  document.getElementById('fileLoad').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadFromFile(f); e.target.value=''; });
+  document.getElementById('btnReloadStandards').onclick = async()=>{ await loadStandards(); render(); };
+  document.getElementById('btnReset').onclick = ()=>{ if(!confirm('Clear ALL assignments & autosave?')) return; assignments.clear(); localStorage.removeItem(LSK); localStorage.removeItem(LSMK); updateAutosave(); render(); };
+  document.getElementById('btnOpenImages').onclick = ()=>{ 
+    // Try to open the images folder - this will work in some contexts
+    try {
+      window.open('./images/', '_blank');
+    } catch(e) {
+      updateStatus('Please manually navigate to the images folder in your file explorer', 'info');
+    }
+  };
+
+  // Optimization controls
+  function setupOptimizationControls() {
+    const enableOptimization = document.getElementById('enableOptimization');
+    const maxWidth = document.getElementById('maxWidth');
+    const maxHeight = document.getElementById('maxHeight');
+    const quality = document.getElementById('quality');
+    const qualityValue = document.getElementById('qualityValue');
+    const format = document.getElementById('format');
+
+    // Update quality display
+    const updateQualityDisplay = () => {
+      qualityValue.textContent = Math.round(quality.value * 100) + '%';
+    };
+    updateQualityDisplay();
+
+    // Event listeners
+    enableOptimization.addEventListener('change', () => {
+      imageOptimization.enableOptimization = enableOptimization.checked;
+    });
+
+    maxWidth.addEventListener('input', () => {
+      imageOptimization.maxWidth = parseInt(maxWidth.value);
+    });
+
+    maxHeight.addEventListener('input', () => {
+      imageOptimization.maxHeight = parseInt(maxHeight.value);
+    });
+
+    quality.addEventListener('input', () => {
+      imageOptimization.quality = parseFloat(quality.value);
+      updateQualityDisplay();
+    });
+
+    format.addEventListener('change', () => {
+      imageOptimization.format = format.value;
+    });
+
+    // Preset buttons
+    document.getElementById('presetHigh').addEventListener('click', () => {
+      setOptimizationPreset('high');
+    });
+
+    document.getElementById('presetWeb').addEventListener('click', () => {
+      setOptimizationPreset('web');
+    });
+
+    document.getElementById('presetSmall').addEventListener('click', () => {
+      setOptimizationPreset('small');
+    });
+  }
+
+  function setOptimizationPreset(preset) {
+    const presets = {
+      high: { maxWidth: 1200, maxHeight: 900, quality: 0.95, format: 'png' },
+      web: { maxWidth: 800, maxHeight: 600, quality: 0.85, format: 'webp' },
+      small: { maxWidth: 400, maxHeight: 300, quality: 0.70, format: 'webp' }
+    };
+
+    const config = presets[preset];
+    if (config) {
+      imageOptimization.maxWidth = config.maxWidth;
+      imageOptimization.maxHeight = config.maxHeight;
+      imageOptimization.quality = config.quality;
+      imageOptimization.format = config.format;
+
+      // Update UI controls
+      document.getElementById('maxWidth').value = config.maxWidth;
+      document.getElementById('maxHeight').value = config.maxHeight;
+      document.getElementById('quality').value = config.quality;
+      document.getElementById('qualityValue').textContent = Math.round(config.quality * 100) + '%';
+      document.getElementById('format').value = config.format;
+
+      updateStatus(`Applied ${preset} quality preset`, 'info');
+    }
+  }
+
+  (async function init(){
+    await loadStandards();
+    loadAutosave();
+    try { const resp = await fetch('image-assignments.json'); if(resp.ok){ normalizeIncoming(await resp.json()); } } catch(_){ }
+    setupOptimizationControls();
+    persist('startup');
+    render();
+  })();
+  </script>
+</body>
+</html>

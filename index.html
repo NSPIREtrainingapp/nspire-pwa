@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSPIRE Training App</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FF6B35">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            max-height: 160px;
+            width: auto;
+            display: inline-block;
+        }
+
+        .page {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.3s;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Login Page */
+        .login-form {
+            margin-top: 50px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #FF6B35;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #FF6B35;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #E55A2B;
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 20px;
+            color: #007AFF;
+            cursor: pointer;
+        }
+
+        /* Search Page */
+        .search-container {
+            position: sticky;
+            top: 90px;
+            background: white;
+            z-index: 99;
+            padding-bottom: 15px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .standards-list {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .standard-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .standard-item:hover {
+            background: #f8f8f8;
+            padding-left: 25px;
+        }
+
+        .standard-title {
+            font-size: 16px;
+            color: #007AFF;
+            font-weight: 500;
+        }
+
+        /* Deficiency Details Page */
+        .back-button {
+            padding: 10px 20px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .deficiency-header {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .deficiency-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .deficiency-meta {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .deficiency-item {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .deficiency-criteria-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        /* Severity Badges */
+        .severity-container {
+            margin-bottom: 15px;
+        }
+
+        .severity-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            background: #f5f5f5;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .severity-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Color-coded text styling instead of badges */
+        .severity-text-low {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .severity-text-moderate {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .severity-text-severe {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .severity-text-life-threatening {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .hcv-text-pass {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .hcv-text-fail {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .severity-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .severity-life-threatening {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .severity-severe {
+            background: #f57c00;
+            color: white;
+        }
+
+        .severity-moderate {
+            background: #fbc02d;
+            color: #333;
+        }
+
+        .severity-low {
+            background: #689f38;
+            color: white;
+        }
+
+        .hcv-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: auto;
+            display: inline-block;
+            min-width: 90px;
+            text-align: center;
+        }
+
+        .hcv-fail {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .hcv-pass {
+            background: #4caf50;
+            color: white;
+        }
+
+        .area-label {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .deficiency-details {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .details-title {
+            color: #1976d2;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .deficiency-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+            white-space: pre-wrap;
+        }
+
+        .correction-timeframe {
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-weight: 500;
+            color: #e65100;
+        }
+
+        .image-section {
+            margin-top: 20px;
+        }
+
+        .image-section-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .image-gallery {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .image-placeholder {
+            width: 100px;
+            height: 100px;
+            background: #f0f0f0;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+
+        .image-placeholder.assigned {
+            border: 2px solid #28a745;
+            background: #fff;
+        }
+
+        .image-placeholder.assigned:hover {
+            border-color: #218838;
+            transform: scale(1.05);
+        }
+
+        .image-placeholder.empty {
+            border: 2px dashed #ddd;
+        }
+
+        .image-placeholder.empty:hover {
+            background: #e8e8e8;
+            border-color: #FF6B35;
+        }
+
+        .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Image Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .image-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 85vh;
+            object-fit: contain;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 35px;
+            cursor: pointer;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        /* Weighted score UI */
+        .units-row {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .units-row label {
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .units-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .weighted-badge {
+            background: #ffeb3b;
+            color: #333;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        
+        .points-lost {
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+        
+        .points-lost-inline {
+            margin-left: 10px;
+            font-size: 0.85em;
+        }
+        
+        .points-lost .weighted-badge {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .points-lost-inline .weighted-badge {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .sample-size-note {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            display: block;
+            text-align: center;
+            width: 100%;
+        }
+        .loc-score-badge {
+            background: #fff59d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <img src="logo.png?v=1" alt="NSPIRE Training App" class="logo">
+        </div>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="page active">
+            <form class="login-form" onsubmit="handleLogin(event)" action="javascript:void(0);">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Login</h2>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <div class="link" onclick="showCreateAccount()">
+                    Create Account - $4.99/month or $45/year
+                </div>
+            </form>
+        </div>
+
+        <!-- Standards Search Page -->
+        <div id="searchPage" class="page">
+            <div class="search-container">
+                <input type="text" class="search-box" id="searchInput" 
+                       placeholder="Search standards or deficiencies..." 
+                       oninput="filterStandards()">
+                <div class="units-row">
+                    <label for="unitsInput">Total Units on Property</label>
+                    <input id="unitsInput" class="units-input" type="number" min="1" step="1" placeholder="e.g. 100">
+                </div>
+                <div id="sampleSizeNote" class="sample-size-note"></div>
+            </div>
+            <div id="standardsList" class="standards-list">
+                <div class="loading">Loading standards...</div>
+            </div>
+        </div>
+
+        <!-- Deficiency Details Page -->
+        <div id="detailsPage" class="page">
+            <div style="position:sticky;top:175px;z-index:101;background:white;padding-top:10px;">
+                <button class="back-button" onclick="showSearchPage()">← Back to Standards</button>
+            </div>
+            <div id="deficiencyDetails"></div>
+        </div>
+
+        <!-- Image Modal -->
+        <div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <span class="modal-close" onclick="closeImageModal()">&times;</span>
+                <img id="modalImage" class="modal-image" src="" alt="Deficiency Image">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global function declarations
+
+        // ============================================
+    // DYNAMICALLY LOAD JSON DATA FROM nspire_standards.json
+        // ============================================
+        let nspireData = [];
+        let imageAssignments = new Map();
+
+        function loadImageAssignments() {
+            try {
+                // First try to load from the image-assignments.json file
+                fetch('image-assignments.json')
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('No image-assignments.json found');
+                    })
+                    .then(assignments => {
+                        console.log('✓ Loaded assignments from image-assignments.json');
+                        processAssignments(assignments);
+                    })
+                    .catch(() => {
+                        // Fallback to localStorage
+                        console.log('Falling back to localStorage...');
+                        const savedAssignments = localStorage.getItem('nspireImageAssignmentsV1');
+                        if (savedAssignments) {
+                            const assignments = JSON.parse(savedAssignments);
+                            processAssignments(assignments);
+                        } else {
+                            console.log('No image assignments found');
+                            imageAssignments = new Map();
+                            showNoDataMessage();
+                        }
+                    });
+            } catch (error) {
+                console.error('Error loading image assignments:', error);
+                imageAssignments = new Map();
+                showNoDataMessage();
+            }
+        }
+
+        function processAssignments(assignments) {
+            imageAssignments = new Map();
+            let processed = 0;
+            
+            for (const [key, value] of Object.entries(assignments)) {
+                if (value && value.src) {
+                    imageAssignments.set(key, {
+                        outputPath: value.src, // Use the base64 data URL directly
+                        description: value.filename || key,
+                        filename: value.filename || 'image.webp'
+                    });
+                    processed++;
+                }
+            }
+            
+            console.log(`✓ Processed ${processed} image assignments`);
+            
+            // Add visible success message
+            const debugDiv = document.createElement('div');
+            debugDiv.id = 'debug-info';
+            debugDiv.style.cssText = 'position:fixed; top:10px; right:10px; background:green; color:white; border:1px solid #ccc; padding:10px; z-index:9999; max-width:300px; font-size:12px;';
+            debugDiv.innerHTML = `
+                <strong>✓ Images Loaded!</strong><br>
+                Found ${processed} assigned images<br>
+                <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
+            `;
+            document.body.appendChild(debugDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (debugDiv.parentElement) {
+                    debugDiv.remove();
+                }
+            }, 5000);
+        }
+
+        function showNoDataMessage() {
+            const debugDiv = document.createElement('div');
+            debugDiv.id = 'debug-info';
+            debugDiv.style.cssText = 'position:fixed; top:10px; right:10px; background:red; color:white; border:1px solid #ccc; padding:10px; z-index:9999; max-width:300px; font-size:12px;';
+            debugDiv.innerHTML = `
+                <strong>❌ No Image Data</strong><br>
+                No assignments found in file or localStorage<br>
+                <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
+            `;
+            document.body.appendChild(debugDiv);
+        }
+
+        // Load data from standards file when the page loads (no-cache + cache-bust)
+        fetch('nspire_standards.json?v=' + Date.now(), { cache: 'no-store' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load nspire_standards.json');
+                }
+                return response.json();
+            })
+            .then(data => {
+                nspireData = data;
+                loadImageAssignments(); // Load image assignments after standards
+                console.log('✓ Successfully loaded', data.length, 'standards');
+                
+                // Automatically go to search page if data loaded successfully
+                showSearchPage();
+                
+                // Once standards are loaded, we can render weights-dependent views if weights are ready
+                if (window.__weightsLoaded) {
+                    // no-op, rendering happens upon navigating to details
+                }
+            })
+            .catch(error => {
+                console.error('Error loading data:', error);
+                const list = document.getElementById('standardsList');
+                if (list) {
+                    list.innerHTML = '<div class="error-message">Error loading nspire_standards.json. Please ensure the file exists and is valid JSON.</div>';
+                }
+            });
+
+        let currentStandard = null;
+        // Removed scoring/weights external fetches to keep this PWA self-contained and avoid 404s
+        let hudSamplingTable = null;
+        let weightsData = null;
+        let severityLocationWeights = null;
+
+        // Load weights and sampling table
+        async function loadWeightsAndSampling() {
+            try {
+                console.log('🔄 Loading weights and sampling data...');
+                
+                // Load sampling table
+                const samplingResponse = await fetch('src/score/hud_sampling_table.json');
+                if (samplingResponse.ok) {
+                    hudSamplingTable = await samplingResponse.json();
+                    console.log('✓ Loaded HUD sampling table:', hudSamplingTable.length, 'entries');
+                } else {
+                    console.error('❌ Failed to load sampling table:', samplingResponse.status);
+                }
+
+                // Load severity location weights (the correct chart!)
+                const severityLocationResponse = await fetch('src/score/severity_location_weights.json');
+                if (severityLocationResponse.ok) {
+                    severityLocationWeights = await severityLocationResponse.json();
+                    console.log('✓ Loaded severity location weights:', severityLocationWeights);
+                    window.__weightsLoaded = true;
+                    
+                    // Show success message to user
+                    const debugDiv = document.createElement('div');
+                    debugDiv.style.cssText = 'position:fixed; top:60px; right:10px; background:blue; color:white; border:1px solid #ccc; padding:10px; z-index:9999; max-width:300px; font-size:12px;';
+                    debugDiv.innerHTML = `
+                        <strong>✓ Calculator Ready!</strong><br>
+                        Severity location weights loaded<br>
+                        <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
+                    `;
+                    document.body.appendChild(debugDiv);
+                    setTimeout(() => debugDiv.remove(), 5000);
+                } else {
+                    console.error('❌ Failed to load severity location weights:', severityLocationResponse.status);
+                }
+            } catch (error) {
+                console.error('❌ Error loading weights and sampling data:', error);
+            }
+        }
+
+        function initializeApp() {
+            if (nspireData && nspireData.length > 0) {
+                console.log(`✓ App ready with ${nspireData.length} standards`);
+                displayStandards();
+            } else {
+                const list = document.getElementById('standardsList');
+                if (list) {
+                    list.innerHTML = '<div class="error-message">No data loaded. Please check nspire_standards.json.</div>';
+                }
+                console.error('✗ No data found. Please check nspire_standards.json.');
+                list.innerHTML = '<div class="error-message">Error loading nspire_standards.json. Please ensure the file exists and is valid JSON.</div>';
+            }
+        }
+
+        // Parse severity into area-based badges
+        function parseSeverityByArea(severityText) {
+            if (!severityText) return [];
+            
+            const severities = [];
+            const lines = severityText.split('\n').filter(line => line.trim());
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                console.log('Processing line:', line);
+                
+                // Check for HCV in next line
+                const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
+                let hcv = null;
+                
+                if (nextLine.includes('HCV:FAIL') || nextLine.includes('HCV: FAIL')) {
+                    hcv = 'fail';
+                    i++; // Skip the HCV line since we've processed it
+                } else if (nextLine.includes('HCV:PASS') || nextLine.includes('HCV: PASS')) {
+                    hcv = 'pass';
+                    i++; // Skip the HCV line since we've processed it
+                }
+                
+                // Check for severity level
+                let severity = null;
+                if (line.includes('LIFE THREATENING')) {
+                    severity = 'life-threatening';
+                } else if (line.includes('SEVERE')) {
+                    severity = 'severe';
+                } else if (line.includes('MODERATE')) {
+                    severity = 'moderate';
+                } else if (line.includes('LOW')) {
+                    severity = 'low';
+                }
+                
+                // Check for area
+                const areaMatch = line.match(/\((UNIT|INSIDE|OUTSIDE)[^)]*\)/);
+                if (severity && areaMatch) {
+                    severities.push({
+                        level: severity,
+                        area: areaMatch[0],
+                        hcv: hcv,
+                        text: line
+                    });
+                }
+            }
+            
+            console.log('Final severities:', severities);
+            return severities;
+        }
+
+        function getTimeframe(severityText) {
+            if (!severityText) return null;
+            const match = severityText.match(/(\d+)\s*(HOUR|DAY)/i);
+            if (match) {
+                return `Correction Timeframe: ${match[1]} ${match[2].toLowerCase()}s`;
+            }
+            return null;
+        }
+
+        function showPage(pageId) {
+            console.log('Showing page:', pageId);
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            } else {
+                console.error('Could not find page:', pageId);
+            }
+        }
+
+        function handleLogin(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            // Navigate to search; standards will render when fetched
+            showSearchPage();
+        }
+
+        function showCreateAccount() {
+            alert('Account creation will be handled through App Store.\nSubscription: $4.99/month or $45/year');
+        }
+
+        function showSearchPage() {
+            showPage('searchPage');
+            displayStandards();
+        }
+
+        function showDetailsPage(standardIndex) {
+            currentStandard = nspireData[standardIndex];
+            currentStandard.index = standardIndex;
+            showPage('detailsPage');
+            displayDeficiencyDetails();
+        }
+
+        function displayStandards() {
+            const list = document.getElementById('standardsList');
+            
+            // Check if data exists
+            if (!nspireData || nspireData.length === 0) {
+                list.innerHTML = '<div class="error-message">No data loaded. Please add your JSON data to the nspireData variable above.</div>';
+                console.error('nspireData is empty. Please paste your JSON data between the brackets.');
+                return;
+            }
+            
+            // Display all standards
+            list.innerHTML = nspireData.map((standard, index) => `
+                <div class="standard-item" onclick="showDetailsPage(${index})">
+                    <div class="standard-title">${standard.title || standard.id}</div>
+                </div>
+            `).join('');
+            
+            console.log(`Displayed ${nspireData.length} standards`);
+        }
+
+        function filterStandards() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const list = document.getElementById('standardsList');
+            
+            if (!searchTerm) {
+                displayStandards();
+                return;
+            }
+            
+            const filtered = nspireData.map((standard, index) => {
+                const stdTitle = (standard.title || standard.id || '').toLowerCase();
+                const matchesStandard = stdTitle.includes(searchTerm);
+                const matchesDeficiency = Array.isArray(standard.deficiencies) && 
+                    standard.deficiencies.some(def => {
+                        const t = (def.title || '').toLowerCase();
+                        const v = (def.verbatim || '').toLowerCase();
+                        return t.includes(searchTerm) || v.includes(searchTerm);
+                    });
+
+                if (matchesStandard || matchesDeficiency) {
+                    return `
+                        <div class="standard-item" onclick="showDetailsPage(${index})">
+                            <div class="standard-title">${standard.title || standard.id}</div>
+                        </div>
+                    `;
+                }
+                return '';
+            }).join('');
+            
+            list.innerHTML = filtered || '<div class="error-message">No standards found</div>';
+        }
+
+        function displayDeficiencyDetails() {
+            if (!currentStandard) return;
+            const details = document.getElementById('deficiencyDetails');
+            let deficienciesHtml = '';
+                function toUpperKey(s) {
+                    return (s || '').toString().trim().toUpperCase();
+                }
+                function getSampleSize(totalUnits) {
+                    const n = Math.max(1, parseInt(totalUnits || '1', 10) || 1);
+                    if (!Array.isArray(hudSamplingTable) || !hudSamplingTable.length) return 1;
+                    for (const row of hudSamplingTable) {
+                        const min = row.min ?? 1;
+                        const max = row.max;
+                        if (n >= min && (max == null || n <= max)) {
+                            return row.sample || 1;
+                        }
+                    }
+                    return 1;
+                }
+                // Scoring/weights calculation - CORRECTED to use severity_location_weights chart
+                function calculatePointsLost(deficiency, standardId, totalUnits = 1) {
+                    if (!severityLocationWeights) {
+                        console.log('⚠️ No severity location weights data available for calculation');
+                        return 0;
+                    }
+
+                    const severity = (deficiency.severity || 'LOW').toUpperCase();
+                    const location = (deficiency.location || 'UNIT').toUpperCase();
+                    
+                    console.log(`🧮 Calculating points for ${standardId}:`, {
+                        severity, location, totalUnits
+                    });
+                    
+                    // Get the pre-calculated chart value
+                    const chartValue = severityLocationWeights[severity] && severityLocationWeights[severity][location];
+                    
+                    if (!chartValue) {
+                        console.log('⚠️ No chart value found for', severity, location);
+                        return 0;
+                    }
+
+                    // Get sample size for the total units
+                    const sampleSize = getSampleSize(totalUnits);
+                    
+                    console.log('Chart lookup:', {
+                        severity, location, chartValue, sampleSize
+                    });
+                    
+                    // CORRECT CALCULATION: Only divide chart value by sample size
+                    const points = chartValue / sampleSize;
+                    
+                    console.log(`Calculation: ${chartValue} ÷ ${sampleSize} = ${points}`);
+                    
+                    const finalPoints = Math.round(points * 100) / 100;
+                    console.log('Final points:', finalPoints);
+                    
+                    return finalPoints; // Round to 2 decimal places
+                }
+
+                // New function to calculate points for specific location/severity combination
+                function calculatePointsLostForGroup(severity, location, totalUnits = 1) {
+                    if (!severityLocationWeights) {
+                        console.log('⚠️ No severity location weights data available for calculation');
+                        return 0;
+                    }
+
+                    const severityKey = severity.toUpperCase();
+                    const locationKey = location.toUpperCase();
+                    
+                    console.log(`🧮 Calculating points for group:`, {
+                        severity: severityKey, location: locationKey, totalUnits
+                    });
+                    
+                    // Get the pre-calculated chart value
+                    const chartValue = severityLocationWeights[severityKey] && severityLocationWeights[severityKey][locationKey];
+                    
+                    if (!chartValue) {
+                        console.log('⚠️ No chart value found for', severityKey, locationKey);
+                        return 0;
+                    }
+
+                    // Get sample size for the total units
+                    const sampleSize = getSampleSize(totalUnits);
+                    
+                    console.log('Chart lookup:', {
+                        severity: severityKey, location: locationKey, chartValue, sampleSize
+                    });
+                    
+                    // CORRECT CALCULATION: Only divide chart value by sample size
+                    const points = chartValue / sampleSize;
+                    
+                    console.log(`Calculation: ${chartValue} ÷ ${sampleSize} = ${points}`);
+                    
+                    const finalPoints = Math.round(points * 100) / 100;
+                    console.log('Final points:', finalPoints);
+                    
+                    return finalPoints; // Round to 2 decimal places
+                }
+
+                function formatPointsDisplay(points) {
+                    if (points === 0) return "0 points";
+                    if (points === 1) return "1 point";
+                    return `${points} points`;
+                }
+
+                function getSeverityDisplayText(severity) {
+                    if (!severity) return '';
+                    const s = severity.toLowerCase();
+                    if (s.includes('life')) return 'LT';
+                    return severity;
+                }
+                
+                function getSeverityClass(severity) {
+                    if (!severity) return '';
+                    const s = severity.toLowerCase();
+                    if (s === 'low') return 'severity-low';
+                    if (s === 'moderate') return 'severity-moderate';
+                    if (s === 'severe') return 'severity-severe';
+                    if (s.includes('life')) return 'severity-life-threatening';
+                    return '';
+                }
+                
+                function getSeverityTextClass(severity) {
+                    if (!severity) return '';
+                    const s = severity.toLowerCase();
+                    if (s === 'low') return 'severity-text-low';
+                    if (s === 'moderate') return 'severity-text-moderate';
+                    if (s === 'severe') return 'severity-text-severe';
+                    if (s.includes('life')) return 'severity-text-life-threatening';
+                    return '';
+                }
+                
+                function getHcvTextClass(hcv) {
+                    if (!hcv) return '';
+                    const h = hcv.toLowerCase();
+                    if (h === 'pass') return 'hcv-text-pass';
+                    if (h === 'fail') return 'hcv-text-fail';
+                    return '';
+                }
+                
+            function getHcvClass(hcv) {
+                if (!hcv) return '';
+                const h = hcv.toLowerCase();
+                if (h === 'pass') return 'hcv-pass';
+                if (h === 'fail') return 'hcv-fail';
+                return '';
+            }
+            if (currentStandard.deficiencies && currentStandard.deficiencies.length > 0) {
+                currentStandard.deficiencies.forEach((def, index) => {
+                        let hcv = def.hcv;
+                        if (!hcv || hcv === 'Not specified') {
+                            if (def.severity) {
+                                const s = def.severity.toLowerCase();
+                                if (s === 'low') hcv = 'PASS';
+                                else if (s === 'moderate' || s === 'severe' || s.includes('life')) hcv = 'FAIL';
+                            } else {
+                                hcv = 'FAIL';
+                            }
+                        }
+                        // Helpers to compute per-location score labels
+                        const totalUnitsVal = localStorage.getItem('totalUnits') || document.getElementById('unitsInput')?.value || '1';
+                        const sampleSizeForUI = getSampleSize(totalUnitsVal);
+                        // Remove score dependencies to keep UI simple
+                        const locScore = () => 0;
+
+                        // Parse severityCellText for location-based severity labels
+                        let locationLabels = '';
+                        if (def.severityCellText) {
+                            const lines = def.severityCellText.split('\n').filter(l => l.trim());
+                            let locationGroups = [];
+                            lines.forEach(line => {
+                                const sevMatch = line.match(/(LOW|MODERATE|SEVERE|LIFE THREATENING)[^\n]*/i);
+                                const locMatch = line.match(/\(([^)]+)\)/);
+                                const hcvMatch = line.match(/HCV:\s*(PASS|FAIL)/i);
+                                if (sevMatch && locMatch) {
+                                    const sev = sevMatch[1];
+                                    const locs = locMatch[1].split(/\s*&\s*|\s*,\s*/);
+                                    const hcvVal = hcvMatch ? hcvMatch[1].toUpperCase() : hcv;
+                                    const sevClass = getSeverityClass(sev);
+                                    const hcvClassLabel = getHcvClass(hcvVal);
+                                    locs.forEach(loc => {
+                                        const scoreVal = locScore(sev, loc);
+                                        locationGroups.push({
+                                            location: loc.trim(),
+                                            severity: sev,
+                                            severityClass: sevClass,
+                                            hcv: hcvVal,
+                                            hcvClass: hcvClassLabel,
+                        score: scoreVal
+                                        });
+                                    });
+                                }
+                            });
+                            if (locationGroups.length > 0) {
+                                const totalUnits = parseInt(localStorage.getItem('totalUnits') || document.getElementById('unitsInput')?.value || '1', 10);
+                                locationGroups.forEach(group => {
+                                    // Calculate points for this specific location/severity combination
+                                    const groupPointsLost = calculatePointsLostForGroup(group.severity, group.location, totalUnits);
+                                    const groupPointsDisplay = formatPointsDisplay(groupPointsLost);
+                                    
+                                    locationLabels += `<div>
+                                        <strong>Location:</strong> <strong class='area-label'>${group.location}</strong> 
+                                        <span class='${getSeverityTextClass(group.severity)}'>${getSeverityDisplayText(group.severity)}</span> 
+                                        <strong>HCV:</strong> <span class='${getHcvTextClass(group.hcv)}'>${group.hcv}</span>
+                                        <span class="points-lost-inline"><strong>Points Lost:</strong> <strong>${groupPointsDisplay}</strong></span>
+                                    </div>`;
+                                });
+                            }
+                        }
+                        // Fallback single line with a score if no grouped labels
+                        let fallbackLocationLine = '';
+                        if (!locationLabels) {
+                            const sevForFallback = def.severity || 'LOW';
+                            const sevClassFallback = getSeverityClass(sevForFallback);
+                            const rawLoc = currentStandard.location || '';
+                            const firstLoc = rawLoc ? rawLoc.split(/\s*\/\s*/)[0].replace(/\s*UNIT\s*/i, 'UNIT').trim() : (def.location || 'UNIT');
+                            
+                            // Calculate points for fallback location/severity
+                            const totalUnits = parseInt(localStorage.getItem('totalUnits') || document.getElementById('unitsInput')?.value || '1', 10);
+                            const fallbackPointsLost = calculatePointsLostForGroup(sevForFallback, def.location || 'UNIT', totalUnits);
+                            const fallbackPointsDisplay = formatPointsDisplay(fallbackPointsLost);
+                            
+                            fallbackLocationLine = `<div>
+                                <strong>Location:</strong> <strong class='area-label'>${def.location || ''}</strong> 
+                                <span class='${getSeverityTextClass(sevForFallback)}'>${getSeverityDisplayText(sevForFallback)}</span> 
+                                <strong>HCV:</strong> <span class='${getHcvTextClass(hcv)}'>${hcv}</span>
+                                <span class="points-lost-inline"><strong>Points Lost:</strong> <strong>${fallbackPointsDisplay}</strong></span>
+                            </div>`;
+                        }
+                        
+                        deficienciesHtml += `
+                            <div class="deficiency-item">
+                                <div class="deficiency-criteria-title">
+                                    <strong>${def.title || def.id}</strong>
+
+                                </div>
+                                <div class="deficiency-meta">
+                                    ${locationLabels || fallbackLocationLine}
+                                    <div><strong>Correction Time:</strong> ${def.correctionTime || 'Not specified'}</div>
+                                </div>
+                                <div class="deficiency-details">
+                                    <div class="details-title">Details</div>
+                                    <div class="deficiency-text">${def.verbatim || ''}</div>
+                                </div>
+                                <div class="image-section">
+                                    <div class="image-section-title">Reference Images:</div>
+                                    <div class="image-gallery">
+                                        ${generateImagePlaceholders(def.id)}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                });
+            }
+            details.innerHTML = `
+                <div class="deficiency-header">
+                    <div class="deficiency-title">${currentStandard.title || currentStandard.id}</div>
+                    <div class="deficiency-meta">
+                        <div><strong>Location:</strong> ${currentStandard.location || 'Not specified'}</div>
+                        <div><strong>Summary:</strong> ${currentStandard.summary || 'Not specified'}</div>
+                        <div><strong>Total Deficiencies:</strong> ${currentStandard.deficiencies ? currentStandard.deficiencies.length : 0}</div>
+                    </div>
+                </div>
+                ${deficienciesHtml}
+            `;
+        }
+
+        function generateImagePlaceholders(deficiencyId) {
+            let html = '';
+            for (let slot = 1; slot <= 3; slot++) {
+                const assignmentKey = `${deficiencyId}_${slot}`;
+                
+                // Check if assignment exists
+                const assignment = imageAssignments.get(assignmentKey);
+                
+                console.log(`Checking ${assignmentKey}:`, assignment); // Debug log
+                
+                if (assignment && assignment.outputPath) {
+                    // Use the image source directly (now supports both file paths and base64 data URLs)
+                    const imageSrc = assignment.outputPath;
+                    
+                    console.log(`Using image source: ${imageSrc.substring(0, 50)}...`); // Debug log (truncated for base64)
+                    html += `<div class="image-placeholder assigned" onclick="showImage('${assignmentKey}')">
+                        <img src="${imageSrc}" alt="${assignment.description}" 
+                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<span>Image Error</span>';">
+                    </div>`;
+                } else {
+                    // Show empty placeholder
+                    console.log(`No assignment found for ${assignmentKey}`); // Debug log
+                    html += `<div class="image-placeholder empty" onclick="showImage('${assignmentKey}')">
+                        <span>Image ${slot}</span>
+                    </div>`;
+                }
+            }
+            return html;
+        }
+
+        function showImage(imageKey) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            
+            // Check if this is an assigned image
+            const assignment = imageAssignments.get(imageKey);
+            
+            if (assignment && assignment.outputPath) {
+                // Use the image source directly (supports both file paths and base64 data URLs)
+                modalImg.src = assignment.outputPath;
+                modalImg.onerror = function() {
+                    this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="20"%3EAssigned Image Not Found%3C/text%3E%3C/svg%3E';
+                };
+            } else {
+                // Try legacy path format for backward compatibility
+                const imagePath = `images/${imageKey}.jpg`;
+                modalImg.src = imagePath;
+                modalImg.onerror = function() {
+                    this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="20"%3EImage Not Available%3C/text%3E%3C/svg%3E';
+                };
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeImageModal(event) {
+            if (!event || event.target === event.currentTarget) {
+                document.getElementById('imageModal').classList.remove('active');
+            }
+        }
+
+        // Initialize the app
+        window.onload = function() {
+            // Load weights and sampling data first
+            loadWeightsAndSampling();
+            
+            // Restore total units from localStorage
+            const unitsEl = document.getElementById('unitsInput');
+            const savedUnits = localStorage.getItem('totalUnits');
+            if (unitsEl) {
+                unitsEl.value = savedUnits || '';
+                unitsEl.addEventListener('input', (e) => {
+                    const v = parseInt(e.target.value || '0', 10);
+                    if (v > 0) {
+                        localStorage.setItem('totalUnits', String(v));
+                    }
+                    // Update sample size note
+                    const note = document.getElementById('sampleSizeNote');
+                    if (note) {
+                        const sample = (function() {
+                            const tv = e.target.value || savedUnits || '1';
+                            if (!hudSamplingTable) return 1;
+                            const n = Math.max(1, parseInt(tv || '1', 10) || 1);
+                            for (const row of hudSamplingTable) {
+                                const min = row.min ?? 1, max = row.max;
+                                if (n >= min && (max == null || n <= max)) return row.sample || 1;
+                            }
+                            return 1;
+                        })();
+                        note.textContent = `Sample size: ${sample}`;
+                    }
+                    // Re-render badges if details page is visible
+                    const detailsVisible = document.getElementById('detailsPage')?.classList.contains('active');
+                    if (detailsVisible && weightsData) {
+                        displayDeficiencyDetails(); // This will recalculate points with new sample size
+                    }
+                });
+                // Initial sample size note
+                const initialNote = document.getElementById('sampleSizeNote');
+                if (initialNote) {
+                    const tv = unitsEl.value || savedUnits || '1';
+                    const n = Math.max(1, parseInt(tv || '1', 10) || 1);
+                    let sampleInit = 1;
+                    if (Array.isArray(hudSamplingTable)) {
+                        for (const row of hudSamplingTable) {
+                            const min = row.min ?? 1, max = row.max;
+                            if (n >= min && (max == null || n <= max)) { sampleInit = row.sample || 1; break; }
+                        }
+                    }
+                    initialNote.textContent = `Sample size: ${sampleInit}`;
+                }
+            }
+
+            // Navigate to search page immediately; standards will appear when fetched
+            handleLogin();
+        };
+    </script>
+</body>
+</html>
