@@ -94,6 +94,72 @@
             z-index: 100;
         }
 
+        /* PWA Install Button */
+        .install-banner {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            padding: var(--spacing-md);
+            text-align: center;
+            border-radius: var(--border-radius);
+            margin: var(--spacing-md);
+            box-shadow: var(--shadow);
+            display: none; /* Hidden by default, shown via JavaScript */
+        }
+
+        .install-banner.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .install-text {
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-sm);
+            font-weight: 500;
+        }
+
+        .install-button {
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: var(--spacing-sm);
+            transition: all 0.2s ease;
+        }
+
+        .install-button:hover {
+            background: var(--neutral-100);
+            transform: translateY(-1px);
+        }
+
+        .dismiss-button {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dismiss-button:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
         .logo {
             max-height: 160px;
             width: auto;
@@ -689,6 +755,29 @@
         <!-- Header -->
         <div class="header">
             <img src="logo.png?v=1" alt="NSPIRE Training App" class="logo">
+            <button id="logoutButton" onclick="handleLogout()" style="
+                position: absolute;
+                top: 16px;
+                right: 16px;
+                background: #ef4444;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+                display: none;
+                transition: background 0.2s ease;
+            " onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                Logout
+            </button>
+        </div>
+
+        <!-- PWA Install Banner -->
+        <div id="installBanner" class="install-banner">
+            <div class="install-text">📱 Install this app on your device for the best experience!</div>
+            <button id="installButton" class="install-button">Install App</button>
+            <button id="dismissButton" class="dismiss-button">Maybe Later</button>
         </div>
 
         <!-- Login Page -->
@@ -745,6 +834,779 @@
     </div>
 
     <script>
+        // ============================================
+        // NSPIRE TRAINING PWA - GOHIGHLEVEL INTEGRATION
+        // ============================================
+        
+        /*
+        🚀 SETUP GUIDE FOR GOHIGHLEVEL INTEGRATION:
+        
+        1. GoHighLevel Account Setup:
+           - Create a GoHighLevel account and location
+           - Go to Settings → Integrations → API Keys
+           - Create a new API key with contacts.readonly and contacts.write permissions
+           - Note your Location ID from Settings → Locations
+        
+        2. Contact Setup in GHL:
+           - Create contacts with email addresses for your users
+           - Add a custom field called 'password' to store app passwords
+           - Add tags for subscription management: 'trial_active', 'paid_subscriber', 'legacy_39', 'standard_59', 'cancelled'
+        
+        3. Configuration:
+           - Update GHL_CONFIG below with your Location ID and API Key
+           - Test with demo credentials: demo@nspire.app / demo123
+        
+        4. Subscription Management:
+           - Users login with email/password stored in GHL
+           - Subscription status is managed via tags in GHL
+           - Offline access cached for 7-day grace period
+           - Real-time updates via webhooks (server.js handles this)
+        
+        5. Security:
+           - Passwords should be hashed in production
+           - Use HTTPS for all API calls
+           - Consider OAuth flow for enhanced security
+           - Webhook signature verification in backend
+        */
+        
+        // ============================================
+        // GOHIGHLEVEL API INTEGRATION
+        // ============================================
+        
+        // ⚠️ CONFIGURATION REQUIRED - Replace these values with your GoHighLevel credentials
+        // Get these from your GoHighLevel account:
+        // 1. Location ID: Settings → Locations → Location Details
+        // 2. API Key: Settings → Integrations → API Keys → Create New Key
+        // 3. Update the webhook URLs in GHL to point to your server
+        
+        // GHL Configuration
+        const GHL_CONFIG = {
+            apiUrl: 'https://services.leadconnectorhq.com/v1',
+            locationId: 'your_ghl_location_id_here', // 🔧 REPLACE WITH YOUR LOCATION ID
+            apiKey: 'your_ghl_api_key_here', // 🔧 REPLACE WITH YOUR API KEY
+            authUrl: 'https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://your-domain.com/auth&client_id=your_client_id&scope=contacts.readonly contacts.write'
+        };
+
+        // Subscription Configuration
+        const SUBSCRIPTION_CONFIG = {
+            trialDays: 14,
+            gracePeriodDays: 7,
+            tiers: {
+                legacy: { price: 39.99, limit: 5000, tag: 'legacy_39' },
+                standard: { price: 59.99, tag: 'standard_59' }
+            },
+            tags: {
+                trial: 'trial_active',
+                paid: 'paid_subscriber',
+                legacy: 'legacy_39',
+                standard: 'standard_59',
+                cancelled: 'cancelled'
+            }
+        };
+
+        // User Session Management
+        let currentUser = null;
+        let userSubscription = null;
+        let lastSyncTime = null;
+        let offlineMode = false;
+
+        // ============================================
+        // GHL API FUNCTIONS
+        // ============================================
+
+        class GHLApi {
+            constructor() {
+                this.baseUrl = GHL_CONFIG.apiUrl;
+                this.locationId = GHL_CONFIG.locationId;
+                this.apiKey = GHL_CONFIG.apiKey;
+                
+                // Validate configuration
+                if (!this.locationId || this.locationId === 'your_ghl_location_id_here') {
+                    console.error('❌ GoHighLevel Location ID not configured');
+                    this.configured = false;
+                } else if (!this.apiKey || this.apiKey === 'your_ghl_api_key_here') {
+                    console.error('❌ GoHighLevel API Key not configured');
+                    this.configured = false;
+                } else {
+                    console.log('✅ GoHighLevel API configured');
+                    this.configured = true;
+                }
+            }
+
+            async makeRequest(endpoint, method = 'GET', data = null) {
+                if (!this.configured) {
+                    throw new Error('GoHighLevel API not configured. Please update GHL_CONFIG with your credentials.');
+                }
+                
+                try {
+                    const options = {
+                        method,
+                        headers: {
+                            'Authorization': `Bearer ${this.apiKey}`,
+                            'Content-Type': 'application/json',
+                            'Version': '2021-07-28'
+                        }
+                    };
+
+                    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+                        options.body = JSON.stringify(data);
+                    }
+
+                    const response = await fetch(`${this.baseUrl}${endpoint}`, options);
+                    
+                    if (!response.ok) {
+                        throw new Error(`GHL API Error: ${response.status} ${response.statusText}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    console.error('GHL API Request Failed:', error);
+                    throw error;
+                }
+            }
+
+            async findContactByEmail(email) {
+                try {
+                    const response = await this.makeRequest(
+                        `/contacts/search?locationId=${this.locationId}&query=${encodeURIComponent(email)}`
+                    );
+                    
+                    const contacts = response.contacts || [];
+                    return contacts.find(contact => 
+                        contact.email && contact.email.toLowerCase() === email.toLowerCase()
+                    );
+                } catch (error) {
+                    console.error('Error finding contact:', error);
+                    return null;
+                }
+            }
+
+            async authenticateUser(email, password) {
+                try {
+                    // Find contact by email
+                    const contact = await this.findContactByEmail(email);
+                    
+                    if (!contact) {
+                        throw new Error('Email not found in our system');
+                    }
+
+                    // Check if contact has password field (custom field in GHL)
+                    const storedPassword = contact.customFields?.find(
+                        field => field.name === 'password' || field.id === 'password'
+                    )?.value;
+
+                    if (!storedPassword) {
+                        throw new Error('Account not set up for app access');
+                    }
+
+                    // Simple password comparison (in production, use proper hashing)
+                    if (storedPassword !== password) {
+                        throw new Error('Invalid password');
+                    }
+
+                    return contact;
+                } catch (error) {
+                    console.error('Authentication failed:', error);
+                    throw error;
+                }
+            }
+
+            async getContactTags(contactId) {
+                try {
+                    const response = await this.makeRequest(`/contacts/${contactId}`);
+                    return response.contact?.tags || [];
+                } catch (error) {
+                    console.error('Error getting contact tags:', error);
+                    return [];
+                }
+            }
+
+            async addTagToContact(contactId, tag) {
+                try {
+                    return await this.makeRequest(`/contacts/${contactId}/tags`, 'POST', {
+                        tags: [tag]
+                    });
+                } catch (error) {
+                    console.error('Error adding tag:', error);
+                    throw error;
+                }
+            }
+
+            async removeTagFromContact(contactId, tag) {
+                try {
+                    return await this.makeRequest(`/contacts/${contactId}/tags/${tag}`, 'DELETE');
+                } catch (error) {
+                    console.error('Error removing tag:', error);
+                    throw error;
+                }
+            }
+
+            async updateContactActivity(contactId, activity) {
+                try {
+                    const note = {
+                        body: `NSPIRE App Activity: ${activity}`,
+                        userId: contactId
+                    };
+                    
+                    return await this.makeRequest(`/contacts/${contactId}/notes`, 'POST', note);
+                } catch (error) {
+                    console.error('Error updating activity:', error);
+                }
+            }
+        }
+
+        // Initialize GHL API
+        const ghlApi = new GHLApi();
+
+        // ============================================
+        // SUBSCRIPTION MANAGEMENT
+        // ============================================
+
+        class SubscriptionManager {
+            constructor() {
+                this.storageKey = 'nspire_subscription_cache';
+            }
+
+            async checkSubscriptionStatus(contact) {
+                try {
+                    const tags = await ghlApi.getContactTags(contact.id);
+                    const subscription = this.parseSubscriptionFromTags(tags, contact);
+                    
+                    // Cache subscription data
+                    this.cacheSubscription(subscription);
+                    
+                    return subscription;
+                } catch (error) {
+                    console.error('Error checking subscription:', error);
+                    // Return cached data if API fails
+                    return this.getCachedSubscription();
+                }
+            }
+
+            parseSubscriptionFromTags(tags, contact) {
+                const tagNames = tags.map(tag => tag.name || tag);
+                
+                const subscription = {
+                    contactId: contact.id,
+                    email: contact.email,
+                    status: 'inactive',
+                    tier: null,
+                    expiresAt: null,
+                    inGracePeriod: false,
+                    tags: tagNames,
+                    lastChecked: new Date().toISOString()
+                };
+
+                // Check subscription status
+                if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.paid)) {
+                    subscription.status = 'active';
+                    
+                    // Determine tier
+                    if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.legacy)) {
+                        subscription.tier = 'legacy';
+                    } else if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.standard)) {
+                        subscription.tier = 'standard';
+                    }
+                } else if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.trial)) {
+                    subscription.status = 'trial';
+                    // Calculate trial expiration (14 days from creation)
+                    const createdDate = new Date(contact.dateAdded || contact.createdAt);
+                    const trialEnd = new Date(createdDate.getTime() + (SUBSCRIPTION_CONFIG.trialDays * 24 * 60 * 60 * 1000));
+                    subscription.expiresAt = trialEnd.toISOString();
+                    
+                    // Check if trial expired
+                    if (new Date() > trialEnd) {
+                        subscription.status = 'expired';
+                        this.checkGracePeriod(subscription, contact);
+                    }
+                } else if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.cancelled)) {
+                    subscription.status = 'cancelled';
+                    this.checkGracePeriod(subscription, contact);
+                }
+
+                return subscription;
+            }
+
+            checkGracePeriod(subscription, contact) {
+                // Check if within 7-day grace period
+                const lastPaymentDate = new Date(contact.lastActivityAt || contact.dateAdded);
+                const gracePeriodEnd = new Date(lastPaymentDate.getTime() + (SUBSCRIPTION_CONFIG.gracePeriodDays * 24 * 60 * 60 * 1000));
+                
+                if (new Date() <= gracePeriodEnd) {
+                    subscription.inGracePeriod = true;
+                    subscription.gracePeriodEnds = gracePeriodEnd.toISOString();
+                }
+            }
+
+            cacheSubscription(subscription) {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(subscription));
+                    lastSyncTime = new Date().toISOString();
+                } catch (error) {
+                    console.error('Error caching subscription:', error);
+                }
+            }
+
+            getCachedSubscription() {
+                try {
+                    const cached = localStorage.getItem(this.storageKey);
+                    return cached ? JSON.parse(cached) : null;
+                } catch (error) {
+                    console.error('Error reading cached subscription:', error);
+                    return null;
+                }
+            }
+
+            clearCache() {
+                localStorage.removeItem(this.storageKey);
+                lastSyncTime = null;
+            }
+
+            isAccessAllowed(subscription) {
+                if (!subscription) return false;
+
+                switch (subscription.status) {
+                    case 'active':
+                        return true;
+                    case 'trial':
+                        return new Date() <= new Date(subscription.expiresAt);
+                    case 'expired':
+                    case 'cancelled':
+                        return subscription.inGracePeriod;
+                    default:
+                        return false;
+                }
+            }
+
+            getAccessMessage(subscription) {
+                if (!subscription) {
+                    return 'Please log in to access the NSPIRE Training App';
+                }
+
+                switch (subscription.status) {
+                    case 'active':
+                        return `Welcome back! Your ${subscription.tier} subscription is active.`;
+                    case 'trial':
+                        const daysLeft = Math.ceil((new Date(subscription.expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
+                        return `Trial active - ${daysLeft} days remaining`;
+                    case 'expired':
+                        if (subscription.inGracePeriod) {
+                            const graceLeft = Math.ceil((new Date(subscription.gracePeriodEnds) - new Date()) / (1000 * 60 * 60 * 24));
+                            return `Subscription expired - ${graceLeft} grace period days remaining`;
+                        }
+                        return 'Subscription expired. Please renew to continue access.';
+                    case 'cancelled':
+                        if (subscription.inGracePeriod) {
+                            return 'Subscription cancelled - limited access during grace period';
+                        }
+                        return 'Subscription cancelled. Please reactivate to continue access.';
+                    default:
+                        return 'No active subscription found';
+                }
+            }
+        }
+
+        // Initialize Subscription Manager
+        const subscriptionManager = new SubscriptionManager();
+
+        // ============================================
+        // ENHANCED LOGIN SYSTEM
+        // ============================================
+
+        async function handleGHLLogin(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const loginButton = document.querySelector('.btn');
+            const errorDiv = document.getElementById('login-error');
+
+            // Clear previous errors
+            if (errorDiv) errorDiv.remove();
+
+            // Validation
+            if (!email || !password) {
+                showLoginError('Please enter both email and password');
+                return;
+            }
+
+            // Check if GHL is configured
+            if (!ghlApi.configured) {
+                // Demo mode for testing
+                if (email === 'demo@nspire.app' && password === 'demo123') {
+                    const demoUser = {
+                        id: 'demo_user_123',
+                        email: 'demo@nspire.app',
+                        firstName: 'Demo',
+                        lastName: 'User',
+                        dateAdded: new Date().toISOString()
+                    };
+                    
+                    const demoSubscription = {
+                        contactId: 'demo_user_123',
+                        email: 'demo@nspire.app',
+                        status: 'active',
+                        tier: 'standard',
+                        expiresAt: null,
+                        inGracePeriod: false,
+                        tags: ['paid_subscriber', 'standard_59'],
+                        lastChecked: new Date().toISOString()
+                    };
+                    
+                    currentUser = demoUser;
+                    userSubscription = demoSubscription;
+                    
+                    showAppContent(demoSubscription);
+                    return;
+                } else {
+                    showLoginError('Demo mode: Use demo@nspire.app / demo123 or configure GoHighLevel API');
+                    return;
+                }
+            }
+
+            // Show loading state
+            loginButton.textContent = 'Authenticating...';
+            loginButton.disabled = true;
+
+            try {
+                // Authenticate with GHL
+                const contact = await ghlApi.authenticateUser(email, password);
+                
+                if (!contact) {
+                    throw new Error('Authentication failed');
+                }
+
+                // Check subscription status
+                const subscription = await subscriptionManager.checkSubscriptionStatus(contact);
+                
+                // Store user session
+                currentUser = contact;
+                userSubscription = subscription;
+                
+                // Update activity log
+                await ghlApi.updateContactActivity(contact.id, 'App Login');
+
+                // Check access permissions
+                if (subscriptionManager.isAccessAllowed(subscription)) {
+                    // Success - show app
+                    showAppContent(subscription);
+                } else {
+                    // No access - show subscription message
+                    showSubscriptionRequired(subscription);
+                }
+
+            } catch (error) {
+                console.error('Login failed:', error);
+                showLoginError(error.message || 'Login failed. Please try again.');
+            } finally {
+                // Reset button
+                loginButton.textContent = 'Login';
+                loginButton.disabled = false;
+            }
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.id = 'login-error';
+            errorDiv.style.cssText = `
+                background: #fee2e2;
+                border: 1px solid #fca5a5;
+                color: #dc2626;
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                font-size: 14px;
+                text-align: center;
+            `;
+            errorDiv.textContent = message;
+            
+            const loginForm = document.querySelector('.login-form');
+            loginForm.insertBefore(errorDiv, loginForm.firstChild);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentElement) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        }
+
+        function showAppContent(subscription) {
+            // Show logout button
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.style.display = 'block';
+            }
+            
+            // Show subscription status
+            showSubscriptionStatus(subscription);
+            
+            // Navigate to search page
+            showSearchPage();
+            
+            // Track app usage
+            trackAppUsage('app_accessed');
+        }
+
+        function showSubscriptionRequired(subscription) {
+            const message = subscriptionManager.getAccessMessage(subscription);
+            
+            const subscriptionDiv = document.createElement('div');
+            subscriptionDiv.innerHTML = `
+                <div style="text-align: center; padding: 24px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin: 16px 0;">
+                    <h3 style="color: #92400e; margin-bottom: 12px;">Subscription Required</h3>
+                    <p style="color: #78350f; margin-bottom: 16px;">${message}</p>
+                    <button onclick="showSubscriptionOptions()" class="btn" style="width: auto; padding: 8px 16px;">
+                        View Subscription Options
+                    </button>
+                </div>
+            `;
+            
+            const loginForm = document.querySelector('.login-form');
+            loginForm.appendChild(subscriptionDiv);
+        }
+
+        function showSubscriptionStatus(subscription) {
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'subscription-status';
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: #10b981;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                z-index: 1000;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            `;
+            
+            const message = subscriptionManager.getAccessMessage(subscription);
+            statusDiv.textContent = message;
+            
+            // Color based on status
+            switch (subscription.status) {
+                case 'active':
+                    statusDiv.style.background = '#10b981'; // green
+                    break;
+                case 'trial':
+                    statusDiv.style.background = '#f59e0b'; // yellow
+                    break;
+                case 'expired':
+                case 'cancelled':
+                    statusDiv.style.background = subscription.inGracePeriod ? '#f59e0b' : '#ef4444'; // yellow or red
+                    break;
+            }
+            
+            document.body.appendChild(statusDiv);
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                if (statusDiv.parentElement) {
+                    statusDiv.remove();
+                }
+            }, 10000);
+        }
+
+        function showSubscriptionOptions() {
+            alert(`NSPIRE Training App Subscription Options:
+
+Legacy Plan: $39.99/year (Limited to first 5,000 users)
+Standard Plan: $59.99/year
+
+14-day trial available for $1
+
+Contact support for subscription assistance.`);
+        }
+
+        // ============================================
+        // OFFLINE SUPPORT & SYNC
+        // ============================================
+
+        function initializeOfflineSupport() {
+            // Check if online
+            function updateOnlineStatus() {
+                offlineMode = !navigator.onLine;
+                
+                if (offlineMode) {
+                    showOfflineIndicator();
+                } else {
+                    hideOfflineIndicator();
+                    // Sync when back online
+                    syncWhenOnline();
+                }
+            }
+
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            
+            // Initial check
+            updateOnlineStatus();
+        }
+
+        function showOfflineIndicator() {
+            let indicator = document.getElementById('offline-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'offline-indicator';
+                indicator.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    background: #ef4444;
+                    color: white;
+                    text-align: center;
+                    padding: 8px;
+                    font-size: 14px;
+                    z-index: 9999;
+                `;
+                indicator.textContent = 'Offline Mode - Using cached data';
+                document.body.insertBefore(indicator, document.body.firstChild);
+            }
+        }
+
+        function hideOfflineIndicator() {
+            const indicator = document.getElementById('offline-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        async function syncWhenOnline() {
+            if (!currentUser || offlineMode) return;
+
+            try {
+                // Re-verify subscription status
+                const subscription = await subscriptionManager.checkSubscriptionStatus(currentUser);
+                userSubscription = subscription;
+                
+                // Check if access still allowed
+                if (!subscriptionManager.isAccessAllowed(subscription)) {
+                    // Access revoked - show warning and logout
+                    alert('Your subscription status has changed. Please log in again.');
+                    handleLogout();
+                }
+                
+                console.log('✓ Subscription status synced');
+            } catch (error) {
+                console.error('Sync failed:', error);
+            }
+        }
+
+        // ============================================
+        // SESSION MANAGEMENT
+        // ============================================
+
+        function initializeSession() {
+            // Show configuration status
+            if (!ghlApi.configured) {
+                showConfigurationWarning();
+            }
+            
+            // Check for existing session
+            const savedUser = localStorage.getItem('nspire_current_user');
+            const savedSubscription = subscriptionManager.getCachedSubscription();
+            
+            if (savedUser && savedSubscription) {
+                currentUser = JSON.parse(savedUser);
+                userSubscription = savedSubscription;
+                
+                // Check if session is still valid (within grace period)
+                const lastCheck = new Date(savedSubscription.lastChecked);
+                const now = new Date();
+                const hoursSinceCheck = (now - lastCheck) / (1000 * 60 * 60);
+                
+                if (hoursSinceCheck < 24 && subscriptionManager.isAccessAllowed(savedSubscription)) {
+                    // Session valid - show app
+                    showAppContent(savedSubscription);
+                    return;
+                }
+            }
+            
+            // No valid session - show login
+            showPage('loginPage');
+        }
+
+        function showConfigurationWarning() {
+            const warningDiv = document.createElement('div');
+            warningDiv.id = 'config-warning';
+            warningDiv.style.cssText = `
+                background: #fef3c7;
+                border: 1px solid #f59e0b;
+                color: #92400e;
+                padding: 12px;
+                border-radius: 8px;
+                margin: 16px;
+                font-size: 14px;
+                text-align: center;
+            `;
+            warningDiv.innerHTML = `
+                <strong>⚙️ Configuration Required</strong><br>
+                Demo mode active. To enable full functionality:<br>
+                1. Get your GoHighLevel Location ID and API Key<br>
+                2. Update GHL_CONFIG in the JavaScript code<br>
+                3. Demo login: demo@nspire.app / demo123
+            `;
+            
+            const loginPage = document.getElementById('loginPage');
+            loginPage.insertBefore(warningDiv, loginPage.firstChild);
+        }
+
+        function saveUserSession() {
+            if (currentUser) {
+                localStorage.setItem('nspire_current_user', JSON.stringify(currentUser));
+            }
+        }
+
+        function handleLogout() {
+            // Clear session data
+            currentUser = null;
+            userSubscription = null;
+            localStorage.removeItem('nspire_current_user');
+            subscriptionManager.clearCache();
+            
+            // Hide logout button
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.style.display = 'none';
+            }
+            
+            // Clear status indicators
+            const statusDiv = document.getElementById('subscription-status');
+            if (statusDiv) statusDiv.remove();
+            
+            // Return to login
+            showPage('loginPage');
+        }
+
+        // ============================================
+        // USAGE TRACKING
+        // ============================================
+
+        async function trackAppUsage(action, details = '') {
+            if (!currentUser || offlineMode) return;
+
+            try {
+                const activity = `${action}${details ? ': ' + details : ''}`;
+                await ghlApi.updateContactActivity(currentUser.id, activity);
+            } catch (error) {
+                console.error('Failed to track usage:', error);
+            }
+        }
+
+        // Track page views
+        function trackPageView(pageName) {
+            trackAppUsage('page_view', pageName);
+        }
+
+        // ============================================
+        // EXISTING APP INTEGRATION
+        // ============================================
+
         // Global function declarations
 
         // ============================================
@@ -997,11 +1859,8 @@
         }
 
         function handleLogin(event) {
-            if (event) {
-                event.preventDefault();
-            }
-            // Navigate to search; standards will render when fetched
-            showSearchPage();
+            // Redirect to GHL authentication
+            return handleGHLLogin(event);
         }
 
         function showCreateAccount() {
@@ -1011,6 +1870,7 @@
         function showSearchPage() {
             showPage('searchPage');
             displayStandards();
+            trackPageView('search');
         }
 
         function showDetailsPage(standardIndex) {
@@ -1018,6 +1878,7 @@
             currentStandard.index = standardIndex;
             showPage('detailsPage');
             displayDeficiencyDetails();
+            trackPageView(`details_${currentStandard.title || currentStandard.id}`);
         }
 
         function displayStandards() {
@@ -1403,6 +2264,10 @@
 
         // Initialize the app
         window.onload = function() {
+            // Initialize GHL systems first
+            initializeSession();
+            initializeOfflineSupport();
+            
             // Load weights and sampling data first
             loadWeightsAndSampling();
             
@@ -1453,8 +2318,114 @@
                 }
             }
 
-            // Navigate to search page immediately; standards will appear when fetched
-            handleLogin();
+            // Save user session on app state changes
+            if (currentUser) {
+                saveUserSession();
+            }
+
+            // PWA Installation Logic
+            let deferredPrompt;
+            const installBanner = document.getElementById('installBanner');
+            const installButton = document.getElementById('installButton');
+            const dismissButton = document.getElementById('dismissButton');
+
+            // Check if app is already installed
+            function isAppInstalled() {
+                return window.matchMedia('(display-mode: standalone)').matches || 
+                       window.navigator.standalone === true ||
+                       localStorage.getItem('pwa-dismissed') === 'true';
+            }
+
+            // Detect platform for appropriate instructions
+            function getInstallInstructions() {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                const isAndroid = /Android/.test(navigator.userAgent);
+                
+                if (isIOS) {
+                    return {
+                        emoji: '🍎',
+                        text: 'Tap Share button, then "Add to Home Screen"',
+                        showButton: false
+                    };
+                } else if (isAndroid) {
+                    return {
+                        emoji: '📱',
+                        text: 'Install this app for the best experience!',
+                        showButton: true
+                    };
+                } else {
+                    return {
+                        emoji: '💻',
+                        text: 'Install this app for offline access!',
+                        showButton: true
+                    };
+                }
+            }
+
+            // Show install banner
+            function showInstallBanner() {
+                if (isAppInstalled()) return;
+                
+                const instructions = getInstallInstructions();
+                const installText = document.querySelector('.install-text');
+                
+                installText.innerHTML = `${instructions.emoji} ${instructions.text}`;
+                
+                if (!instructions.showButton) {
+                    installButton.style.display = 'none';
+                } else {
+                    installButton.style.display = 'inline-block';
+                }
+                
+                installBanner.classList.add('show');
+            }
+
+            // Handle beforeinstallprompt event (Android Chrome)
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                showInstallBanner();
+            });
+
+            // Install button click handler
+            installButton.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    
+                    if (outcome === 'accepted') {
+                        console.log('PWA installed successfully');
+                    }
+                    
+                    deferredPrompt = null;
+                    installBanner.classList.remove('show');
+                } else {
+                    // Fallback: show manual instructions
+                    alert('To install:\n\nAndroid: Tap menu (⋮) → "Add to Home screen"\niOS: Tap Share (□↗) → "Add to Home Screen"');
+                }
+            });
+
+            // Dismiss button click handler
+            dismissButton.addEventListener('click', () => {
+                installBanner.classList.remove('show');
+                localStorage.setItem('pwa-dismissed', 'true');
+            });
+
+            // Show banner after app loads (if not installed and not dismissed)
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    if (!isAppInstalled() && !deferredPrompt) {
+                        showInstallBanner();
+                    }
+                }, 3000); // Show after 3 seconds
+            });
+
+            // Track if app was successfully installed
+            window.addEventListener('appinstalled', () => {
+                console.log('PWA was installed');
+                installBanner.classList.remove('show');
+                localStorage.setItem('pwa-installed', 'true');
+            });
         };
     </script>
 </body>
