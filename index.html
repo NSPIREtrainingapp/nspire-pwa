@@ -9,7 +9,24 @@
     
     <!-- Native App Configuration -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name        // App initialization - manual users only
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCachedUsers(); // Load offline data first
+            checkExistingSession();
+            setupLoginForm();
+            
+            console.log('✅ App loaded with manual user database');
+            console.log('👥 Available users:', Object.keys(authorizedUsers));
+            console.log('🔍 Full user data:', authorizedUsers);
+            
+            // Weekly sync removed due to CORS - using manual user management
+        });
+
+        function checkExistingSession() {ole.log('✅ App loaded with manual user database');
+            console.log('👥 Available users:', Object.keys(authorizedUsers));
+            
+            // Weekly sync removed due to CORS - using manual user management
+        });le-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="NSPIRE Pro">
     <link rel="apple-touch-icon" href="icon-192.png">
     
@@ -38,14 +55,14 @@
         }
         
         .header {
-            background: #FF6B35;
-            color: white;
+            background: white;
+            color: black;
             padding: 20px;
             text-align: center;
         }
         
         .logo {
-            max-width: 200px;
+            width: 100%;
             height: auto;
             display: block;
             margin: 0 auto;
@@ -83,7 +100,7 @@
         button {
             width: 100%;
             padding: 15px;
-            background: #FF6B35;
+            background: #007BFF;
             color: white;
             border: none;
             border-radius: 8px;
@@ -93,7 +110,7 @@
         }
         
         button:hover {
-            background: #e55a2b;
+            background: #0056b3;
         }
         
         .main-app {
@@ -132,11 +149,37 @@
                         <input type="password" id="password" required>
                     </div>
                     
-                    <button type="submit">Login to App</button>
+                    <button type="submit">LOGIN</button>
                 </form>
                 
                 <div id="loginMessage"></div>
             </div>
+        </div>
+        
+        <!-- PWA Install Banner -->
+        <div id="installBanner" style="
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+        ">
+            <button id="installButton" style="
+                background: white;
+                color: #007BFF;
+                border: none;
+                padding: 15px 30px;
+                border-radius: 5px;
+                font-weight: bold;
+                font-size: 16px;
+                cursor: pointer;
+            ">INSTALL APP</button>
         </div>
         
         <!-- Main App -->
@@ -188,15 +231,14 @@
     </div>
 
     <script>
-        // GHL-Synchronized User Database with Auto-Expiration
+        // Manual User Database (no GHL sync due to CORS)
         let authorizedUsers = {
-            // Demo users (remove these in production)
-            'demo@nspire.com': { 
-                password: 'demo123', 
-                plan: 'pro', 
-                name: 'Demo User',
-                expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days
-                ghlContactId: 'demo_contact'
+            'nspiretrainingapp@gmail.com': {
+                password: '1234',
+                plan: 'trial_active',
+                name: 'Test User',
+                expiresAt: Date.now() + (14 * 24 * 60 * 60 * 1000), // 14 days
+                ghlContactId: 'manual_entry'
             }
         };
 
@@ -211,9 +253,12 @@
         async function syncWithGHL() {
             try {
                 console.log('🔄 Syncing with GoHighLevel...');
+                console.log('📍 Location ID:', GHL_CONFIG.locationId);
+                console.log('🔑 API Key:', GHL_CONFIG.apiKey.substring(0, 10) + '...');
                 
-                // Fetch active subscribers from GHL
-                const response = await fetch(`https://api.gohighlevel.com/v1/contacts/`, {
+                // Try GHL v1 API with your specific location
+                const response = await fetch(`https://services.leadconnectorhq.com/v1/contacts?locationId=${GHL_CONFIG.locationId}`, {
+                    method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${GHL_CONFIG.apiKey}`,
                         'Content-Type': 'application/json'
@@ -222,7 +267,8 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    updateLocalUserDatabase(data.contacts);
+                    console.log('📦 Raw GHL Response:', data);
+                    updateLocalUserDatabase(data.contacts || []);
                     localStorage.setItem('lastGHLSync', Date.now().toString());
                     
                     // Count users by pricing tier
@@ -235,7 +281,9 @@
                     console.log(`✅ GHL sync completed - Found ${data.contacts?.length || 0} contacts`);
                     console.log(`📊 Active users: Trial: ${usersByTier.trial || 0}, Legacy $39: ${usersByTier.legacy_39 || 0}, Standard $59: ${usersByTier.standard_59 || 0}`);
                 } else {
-                    console.warn('⚠️ GHL sync failed, using cached data');
+                    console.error('❌ GHL API Error:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('❌ Error details:', errorText);
                 }
             } catch (error) {
                 console.warn('⚠️ GHL sync error:', error.message);
@@ -247,9 +295,23 @@
         function updateLocalUserDatabase(contacts) {
             const newUsers = {};
             
-            contacts.forEach(contact => {
-                // Only include active subscribers and trial users
-                if (contact.tags && (contact.tags.includes('paid_subscriber') || contact.tags.includes('trial_active'))) {
+            console.log('🔍 Processing contacts:', contacts?.length || 0);
+            
+            contacts.forEach((contact, index) => {
+                console.log(`👤 Contact ${index + 1}:`, {
+                    email: contact.email,
+                    tags: contact.tags,
+                    customFields: contact.customFields
+                });
+                
+                // Check for required tags (trial_active, standard_59, or legacy_39)
+                const hasValidTag = contact.tags && (
+                    contact.tags.includes('trial_active') || 
+                    contact.tags.includes('standard_59') || 
+                    contact.tags.includes('legacy_39')
+                );
+                
+                if (hasValidTag && contact.email) {
                     const email = contact.email.toLowerCase();
                     
                     // Determine subscription type and pricing
@@ -257,7 +319,7 @@
                     let subscriptionEnd;
                     
                     if (contact.tags.includes('trial_active')) {
-                        plan = 'trial';
+                        plan = 'trial_active';
                         subscriptionEnd = new Date(Date.now() + (14 * 24 * 60 * 60 * 1000)); // 14 days
                     } else if (contact.tags.includes('legacy_39')) {
                         plan = 'legacy_39';
@@ -265,38 +327,33 @@
                     } else if (contact.tags.includes('standard_59')) {
                         plan = 'standard_59';
                         subscriptionEnd = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)); // 1 year
-                    } else {
-                        // Default for paid subscribers without specific plan tag
-                        plan = 'standard_59';
-                        subscriptionEnd = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)); // 1 year
                     }
                     
                     newUsers[email] = {
-                        password: contact.customFields?.app_password || 'temp123',
+                        password: contact.customFields?.app_password || 'nspire123',
                         plan: plan,
                         name: (contact.firstName || '') + ' ' + (contact.lastName || ''),
                         expiresAt: subscriptionEnd.getTime(),
                         ghlContactId: contact.id,
                         lastSync: Date.now(),
                         appUserId: contact.customFields?.app_user_id || contact.id,
-                        subscriberNumber: contact.customFields?.subscriber_number,
-                        pricingTier: contact.tags.includes('legacy_39') ? '$39.99 Legacy' : 
-                                   contact.tags.includes('standard_59') ? '$59.99 Standard' : 
-                                   contact.tags.includes('trial_active') ? 'Free Trial' : 'Standard'
+                        subscriberNumber: contact.customFields?.subscriber_number
                     };
+                    
+                    console.log(`✅ Added user: ${email} (${plan})`);
+                } else {
+                    console.log(`❌ Skipped contact: ${contact.email || 'no email'} - Missing required tags`);
                 }
             });
             
-            // Update authorized users (keeping demo users for testing)
-            const demoUsers = Object.fromEntries(
-                Object.entries(authorizedUsers).filter(([email]) => email.includes('demo'))
-            );
-            
-            authorizedUsers = { ...demoUsers, ...newUsers };
+            // Update authorized users 
+            authorizedUsers = { ...newUsers };
             
             // Cache for offline use
             localStorage.setItem('cachedUsers', JSON.stringify(authorizedUsers));
             localStorage.setItem('userCacheTime', Date.now().toString());
+            
+            console.log('📊 Total authorized users:', Object.keys(authorizedUsers).length);
         }
 
         // Load cached users for offline operation
@@ -315,40 +372,58 @@
             return false;
         }
 
-        // Enhanced login with subscription validation
+        // Enhanced login with Netlify Function + GHL integration
         function handleLogin() {
             const email = document.getElementById('email').value.toLowerCase();
             const password = document.getElementById('password').value;
             const messageDiv = document.getElementById('loginMessage');
             
-            const user = authorizedUsers[email];
-            
-            if (user && user.password === password) {
-                // Check if subscription is still active
-                if (user.expiresAt && Date.now() > user.expiresAt) {
-                    messageDiv.innerHTML = '<div class="error">❌ Subscription expired. Please renew your subscription.</div>';
-                    return;
-                }
-                
-                // Create session
-                const session = {
-                    email: email,
-                    name: user.name,
-                    plan: user.plan,
-                    expiresAt: user.expiresAt,
-                    loginTime: Date.now()
-                };
-                
-                localStorage.setItem('nspire_session', JSON.stringify(session));
-                messageDiv.innerHTML = '<div class="success">✅ Login successful!</div>';
-                
-                setTimeout(() => {
-                    showMainApp(session);
-                }, 1000);
-                
-            } else {
-                messageDiv.innerHTML = '<div class="error">❌ Invalid credentials or subscription inactive</div>';
+            if (!email || !password) {
+                messageDiv.innerHTML = '<div class="error">❌ Please enter email and password</div>';
+                return;
             }
+
+            messageDiv.innerHTML = '<div style="color: #007BFF;">🔄 Verifying with GoHighLevel...</div>';
+            
+            // Call Netlify Function for GHL authentication
+            fetch('/.netlify/functions/ghl-auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    // Create session with GHL data
+                    const session = {
+                        email: data.user.email,
+                        name: data.user.name,
+                        plan: data.user.plan,
+                        expiresAt: data.user.expiresAt,
+                        loginTime: Date.now(),
+                        ghlContactId: data.user.ghlContactId
+                    };
+                    
+                    localStorage.setItem('nspire_session', JSON.stringify(session));
+                    messageDiv.innerHTML = '<div class="success">✅ Login successful!</div>';
+                    
+                    console.log('✅ GHL Authentication successful:', data.user);
+                    
+                    setTimeout(() => {
+                        showMainApp(session);
+                    }, 1000);
+                } else {
+                    messageDiv.innerHTML = `<div class="error">❌ ${data.error || 'Authentication failed'}</div>`;
+                    console.log('❌ GHL Authentication failed:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Authentication error:', error);
+                messageDiv.innerHTML = '<div class="error">❌ Connection error. Please try again.</div>';
+            });
+        }
         }
 
         // Enhanced session validation with expiration check
@@ -384,29 +459,16 @@
             showLoginScreen();
         }
 
-        // App initialization with weekly GHL sync
+        // App initialization - manual users only
         document.addEventListener('DOMContentLoaded', function() {
             loadCachedUsers(); // Load offline data first
             checkExistingSession();
             setupLoginForm();
             
-            // Check if sync is needed (once per week)
-            const lastSync = localStorage.getItem('lastGHLSync');
-            const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            console.log('✅ App loaded with manual user database');
+            console.log('� Available users:', Object.keys(authorizedUsers));
             
-            if (!lastSync || parseInt(lastSync) < weekAgo) {
-                syncWithGHL(); // Sync if it's been a week or never synced
-            }
-            
-            // Set up weekly sync interval
-            setInterval(() => {
-                const lastSync = localStorage.getItem('lastGHLSync');
-                const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-                
-                if (!lastSync || parseInt(lastSync) < weekAgo) {
-                    syncWithGHL();
-                }
-            }, 24 * 60 * 60 * 1000); // Check daily, but only sync weekly
+            // Weekly sync removed due to CORS - using manual user management
         });
 
         function checkExistingSession() {
@@ -438,35 +500,6 @@
             });
         }
 
-        function handleLogin() {
-            const email = document.getElementById('email').value.toLowerCase();
-            const password = document.getElementById('password').value;
-            const messageDiv = document.getElementById('loginMessage');
-            
-            const user = authorizedUsers[email];
-            
-            if (user && user.password === password) {
-                // Create session
-                const session = {
-                    email: email,
-                    name: user.name,
-                    plan: user.plan,
-                    loginTime: Date.now()
-                };
-                
-                localStorage.setItem('nspire_session', JSON.stringify(session));
-                
-                messageDiv.innerHTML = '<div class="success">✅ Login successful!</div>';
-                
-                setTimeout(() => {
-                    showMainApp(session);
-                }, 1000);
-                
-            } else {
-                messageDiv.innerHTML = '<div class="error">❌ Invalid email or password</div>';
-            }
-        }
-
         function showMainApp(user) {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
@@ -488,13 +521,51 @@
             showLoginScreen();
         }
 
-        // Prevent context menu and dev tools (native app behavior)
+        // Prevent context menu (but allow dev tools for debugging)
         document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'F12' || (e.ctrlKey && e.key === 'u')) {
-                e.preventDefault();
+        // Temporarily disabled F12 blocking for debugging
+        // document.addEventListener('keydown', function(e) {
+        //     if (e.key === 'F12' || (e.ctrlKey && e.key === 'u')) {
+        //         e.preventDefault();
+        //     }
+        // });
+
+        // PWA Installation - HONEST VERSION
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        const installButton = document.getElementById('installButton');
+
+        // Only show banner if browser actually supports auto-install
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBanner.style.display = 'block';
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('App installed!');
+                    installBanner.style.display = 'none';
+                }
+                deferredPrompt = null;
             }
         });
+
+        // Check if already installed
+        window.addEventListener('appinstalled', () => {
+            installBanner.style.display = 'none';
+            console.log('PWA was installed');
+        });
+
+        // Show manual install instructions for iOS
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent) && !window.navigator.standalone) {
+            setTimeout(() => {
+                alert('📱 To install NSPIRE Training as an app:\n\n1. Tap the Share button ⬆️\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right');
+            }, 3000);
+        }
     </script>
 </body>
 </html>
