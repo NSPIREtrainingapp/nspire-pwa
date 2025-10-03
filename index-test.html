@@ -213,7 +213,7 @@
         // GHL API Configuration
         const GHL_CONFIG = {
             apiKey: 'pit-27a95900-7f0c-4fe1-b5ee-50f199a49a0a', // Your actual GHL API key
-            locationId: 'your_location_id', // You'll need to get this from GHL
+            locationId: 'QPG7wp7xYyeZidGPH0JV', // Your GHL Location ID
             syncInterval: 7 * 24 * 60 * 60 * 1000 // Sync once per week (7 days)
         };
 
@@ -234,7 +234,8 @@
                     const data = await response.json();
                     updateLocalUserDatabase(data.contacts);
                     localStorage.setItem('lastGHLSync', Date.now().toString());
-                    console.log('✅ GHL sync completed');
+                    console.log(`✅ GHL sync completed - Found ${data.contacts?.length || 0} contacts`);
+                    console.log(`📊 Active subscribers: ${Object.keys(authorizedUsers).filter(email => !email.includes('demo')).length}`);
                 } else {
                     console.warn('⚠️ GHL sync failed, using cached data');
                 }
@@ -250,17 +251,21 @@
             
             contacts.forEach(contact => {
                 // Only include active subscribers
-                if (contact.tags && contact.tags.includes('nspire_subscriber')) {
+                if (contact.tags && (contact.tags.includes('paid_subscriber') || contact.tags.includes('trial_active'))) {
                     const email = contact.email.toLowerCase();
-                    const subscriptionEnd = new Date(contact.customFields?.subscriptionEnd || Date.now() + (365 * 24 * 60 * 60 * 1000));
+                    const subscriptionEnd = new Date(contact.customFields?.subscription_tier ? 
+                        Date.now() + (365 * 24 * 60 * 60 * 1000) : // 1 year for paid
+                        Date.now() + (14 * 24 * 60 * 60 * 1000));   // 14 days for trial
                     
                     newUsers[email] = {
-                        password: contact.customFields?.appPassword || 'temp123',
-                        plan: contact.customFields?.plan || 'pro',
+                        password: contact.customFields?.app_password || 'temp123',
+                        plan: contact.customFields?.subscription_tier || 'trial',
                         name: contact.firstName + ' ' + contact.lastName,
                         expiresAt: subscriptionEnd.getTime(),
                         ghlContactId: contact.id,
-                        lastSync: Date.now()
+                        lastSync: Date.now(),
+                        appUserId: contact.customFields?.app_user_id || contact.id,
+                        subscriberNumber: contact.customFields?.subscriber_number
                     };
                 }
             });
