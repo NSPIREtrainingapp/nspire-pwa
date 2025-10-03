@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NSPIRE Training App</title>
-    <link rel="manifest" href="manifest.json">
+    <!-- Manifest removed to prevent PWA notifications -->
+    <!-- <link rel="manifest" href="manifest.json"> -->
     <meta name="theme-color" content="#FF6B35">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -96,19 +97,20 @@
 
         /* PWA Install Button */
         .install-banner {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-            color: white;
-            padding: var(--spacing-md);
-            text-align: center;
-            border-radius: var(--border-radius);
-            margin: var(--spacing-md);
-            box-shadow: var(--shadow);
-            display: none; /* Hidden by default, shown via JavaScript */
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            position: absolute;
+            top: -9999px;
+            pointer-events: none;
         }
 
         .install-banner.show {
-            display: block;
-            animation: slideDown 0.3s ease-out;
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
         }
 
         @keyframes slideDown {
@@ -272,6 +274,149 @@
             color: var(--secondary-color);
             cursor: pointer;
             font-size: var(--font-size-sm);
+        }
+        
+        /* License Activation Styles */
+        .license-form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .activation-methods {
+            margin-bottom: 20px;
+        }
+        
+        .method-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e1e5e9;
+        }
+        
+        .method-tab {
+            flex: 1;
+            padding: 12px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .method-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .activation-method {
+            display: none;
+        }
+        
+        .activation-method.active {
+            display: block;
+        }
+        
+        .license-input {
+            font-family: 'Courier New', monospace !important;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        
+        .qr-scanner-container {
+            position: relative;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .qr-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        
+        .qr-frame {
+            width: 200px;
+            height: 200px;
+            border: 3px solid var(--primary-color);
+            border-radius: 8px;
+            box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);
+        }
+        
+        .license-message {
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .license-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .license-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .license-message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            display: block;
+        }
+        
+        .purchase-links {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .license-status {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .license-status .status-title {
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 8px;
+        }
+        
+        .license-status .status-details {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .license-status-compact {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin: 8px 0;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
         }
 
         /* Search Page improvements */
@@ -672,13 +817,41 @@
             margin-top: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            flex-wrap: wrap;
         }
         .units-row label {
             font-size: 14px;
             color: #333;
             white-space: nowrap;
             font-weight: 500;
+        }
+        
+        .units-input-compact {
+            width: 80px;
+            padding: 8px 10px;
+            border: 2px solid var(--neutral-300);
+            border-radius: 6px;
+            font-size: 16px;
+            text-align: center;
+            font-weight: 600;
+            transition: border-color 0.2s ease;
+        }
+        
+        .units-input-compact:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+        
+        .sample-size-inline {
+            background: var(--neutral-100);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--neutral-700);
+            white-space: nowrap;
         }
         /* Enhanced form controls */
         .units-input {
@@ -773,30 +946,53 @@
             </button>
         </div>
 
-        <!-- PWA Install Banner -->
-        <div id="installBanner" class="install-banner">
-            <div class="install-text">📱 Install this app on your device for the best experience!</div>
-            <button id="installButton" class="install-button">Install App</button>
-            <button id="dismissButton" class="dismiss-button">Maybe Later</button>
-        </div>
+        <!-- PWA Install Banner - COMPLETELY REMOVED -->
+        <!-- Banner HTML removed to prevent all notifications -->
 
-        <!-- Login Page -->
+        <!-- License Activation Page -->
         <div id="loginPage" class="page active">
-            <form class="login-form" onsubmit="handleLogin(event)" action="javascript:void(0);">
-                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Login</h2>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" required placeholder="Enter your email">
+            <div class="license-form">
+                <div class="activation-methods">
+                    <div class="method-tabs">
+                        <button class="method-tab active" onclick="showActivationMethod('key')">Enter License Key</button>
+                        <button class="method-tab" onclick="showActivationMethod('qr')">Scan QR Code</button>
+                    </div>
+                    
+                    <!-- License Key Input -->
+                    <div id="keyMethod" class="activation-method active">
+                        <div class="form-group">
+                            <label class="form-label">License Key</label>
+                            <input type="text" id="licenseKeyInput" class="form-input license-input" 
+                                   placeholder="NSPIRE-2025-XXXX-XXXX-XXXX" 
+                                   pattern="NSPIRE-\d{4}-[A-Z0-9]{4,6}-[A-Z0-9]{4,6}-[A-Z0-9]{4,6}"
+                                   style="font-family: monospace; text-transform: uppercase;">
+                        </div>
+                        <button type="button" class="btn" onclick="activateLicense()">Activate License</button>
+                    </div>
+                    
+                    <!-- QR Scanner -->
+                    <div id="qrMethod" class="activation-method">
+                        <div class="qr-scanner-container">
+                            <video id="qrVideo" style="width: 100%; max-width: 300px; border-radius: 8px;"></video>
+                            <canvas id="qrCanvas" style="display: none;"></canvas>
+                            <div class="qr-overlay">
+                                <div class="qr-frame"></div>
+                                <p style="color: white; margin-top: 10px;">Position QR code within frame</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="startQRScanner()">Start Camera</button>
+                        <button type="button" class="btn btn-secondary" onclick="stopQRScanner()">Stop Camera</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-input" required placeholder="Enter your password">
+                
+                <div id="licenseMessage" class="license-message"></div>
+                
+                <div class="purchase-links">
+                    <div class="link" onclick="renewLicense()" style="font-size: 16px; font-weight: 600; color: var(--primary-color);">
+                        RENEW YOUR LICENSE
+                    </div>
                 </div>
-                <button type="submit" class="btn">Login</button>
-                <div class="link" onclick="showCreateAccount()">
-                    Create Account - $4.99/month or $45/year
-                </div>
-            </form>
+            </div>
         </div>
 
         <!-- Standards Search Page -->
@@ -807,9 +1003,9 @@
                        oninput="filterStandards()">
                 <div class="units-row">
                     <label for="unitsInput">Total Units on Property</label>
-                    <input id="unitsInput" class="units-input" type="number" min="1" step="1" placeholder="e.g. 100">
+                    <input id="unitsInput" class="units-input-compact" type="number" min="1" max="9999" step="1" placeholder="100">
+                    <div id="sampleSizeNote" class="sample-size-inline">Sample Size: --</div>
                 </div>
-                <div id="sampleSizeNote" class="sample-size-note"></div>
             </div>
             <div id="standardsList" class="standards-list">
                 <div class="loading">Loading standards...</div>
@@ -1343,8 +1539,8 @@
             // Show subscription status
             showSubscriptionStatus(subscription);
             
-            // Navigate to search page
-            showSearchPage();
+            // Navigate to search page - DISABLED for license system
+            // showSearchPage();
             
             // Track app usage
             trackAppUsage('app_accessed');
@@ -1544,16 +1740,10 @@ Contact support for subscription assistance.`);
                 font-size: 14px;
                 text-align: center;
             `;
-            warningDiv.innerHTML = `
-                <strong>⚙️ Configuration Required</strong><br>
-                Demo mode active. To enable full functionality:<br>
-                1. Get your GoHighLevel Location ID and API Key<br>
-                2. Update GHL_CONFIG in the JavaScript code<br>
-                3. Demo login: demo@nspire.app / demo123
-            `;
+            // Configuration text removed - using license system now
             
             const loginPage = document.getElementById('loginPage');
-            loginPage.insertBefore(warningDiv, loginPage.firstChild);
+            // loginPage.insertBefore(warningDiv, loginPage.firstChild); // Removed
         }
 
         function saveUserSession() {
@@ -1666,23 +1856,8 @@ Contact support for subscription assistance.`);
             
             console.log(`✓ Processed ${processed} image assignments`);
             
-            // Add visible success message
-            const debugDiv = document.createElement('div');
-            debugDiv.id = 'debug-info';
-            debugDiv.style.cssText = 'position:fixed; top:10px; right:10px; background:green; color:white; border:1px solid #ccc; padding:10px; z-index:9999; max-width:300px; font-size:12px;';
-            debugDiv.innerHTML = `
-                <strong>✓ Images Loaded!</strong><br>
-                Found ${processed} assigned images<br>
-                <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
-            `;
-            document.body.appendChild(debugDiv);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (debugDiv.parentElement) {
-                    debugDiv.remove();
-                }
-            }, 5000);
+            // Debug message disabled to prevent notifications
+            // Green banner with "Images Loaded" message removed
         }
 
         function showNoDataMessage() {
@@ -1710,8 +1885,8 @@ Contact support for subscription assistance.`);
                 loadImageAssignments(); // Load image assignments after standards
                 console.log('✓ Successfully loaded', data.length, 'standards');
                 
-                // Automatically go to search page if data loaded successfully
-                showSearchPage();
+                // Automatically go to search page if data loaded successfully - DISABLED for license system
+                // showSearchPage();
                 
                 // Once standards are loaded, we can render weights-dependent views if weights are ready
                 if (window.__weightsLoaded) {
@@ -1753,16 +1928,8 @@ Contact support for subscription assistance.`);
                     console.log('✓ Loaded severity location weights:', severityLocationWeights);
                     window.__weightsLoaded = true;
                     
-                    // Show success message to user
-                    const debugDiv = document.createElement('div');
-                    debugDiv.style.cssText = 'position:fixed; top:60px; right:10px; background:blue; color:white; border:1px solid #ccc; padding:10px; z-index:9999; max-width:300px; font-size:12px;';
-                    debugDiv.innerHTML = `
-                        <strong>✓ Calculator Ready!</strong><br>
-                        Severity location weights loaded<br>
-                        <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
-                    `;
-                    document.body.appendChild(debugDiv);
-                    setTimeout(() => debugDiv.remove(), 5000);
+                    // Debug message disabled to prevent notifications
+                    console.log('✓ Calculator Ready - Severity location weights loaded');
                 } else {
                     console.error('❌ Failed to load severity location weights:', severityLocationResponse.status);
                 }
@@ -1858,10 +2025,509 @@ Contact support for subscription assistance.`);
             }
         }
 
-        function handleLogin(event) {
-            // Redirect to GHL authentication
-            return handleGHLLogin(event);
+        // ============================================================================
+        // NSPIRE TRAINING PRO - LICENSE VALIDATION SYSTEM
+        // ============================================================================
+        
+        // Security Configuration
+        const SECURITY_CONFIG = {
+            MAX_DEVICES: 2,
+            ENTERPRISE_MAX_DEVICES: 10,
+            LICENSE_VALIDITY_DAYS: 365,
+            OFFLINE_GRACE_DAYS: 30,
+            REVALIDATION_INTERVAL_DAYS: 7,
+            ANTI_TAMPER_ENABLED: true // Keep security active
+        };
+        
+        // Device Fingerprinting
+        class DeviceFingerprinting {
+            static generateFingerprint() {
+                const components = [
+                    navigator.userAgent,
+                    navigator.language,
+                    screen.width + 'x' + screen.height,
+                    new Date().getTimezoneOffset(),
+                    navigator.hardwareConcurrency || 'unknown',
+                    navigator.platform,
+                    navigator.cookieEnabled.toString()
+                ];
+                
+                const fingerprint = components.join('|');
+                return this.hashString(fingerprint).substring(0, 16);
+            }
+            
+            static hashString(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // Convert to 32-bit integer
+                }
+                return Math.abs(hash).toString(36);
+            }
         }
+        
+        // Anti-Developer Tools Detection
+        class AntiTamper {
+            static isEnabled = SECURITY_CONFIG.ANTI_TAMPER_ENABLED;
+            static detectionActive = false;
+            
+            static startProtection() {
+                if (!this.isEnabled) return;
+                
+                this.detectionActive = true;
+                this.detectDevTools();
+                this.detectDebugger();
+                this.detectInspection();
+                
+                console.log('%cNSPIRE Training Pro', 'color: #FF6B35; font-size: 24px; font-weight: bold;');
+                console.log('%cUnauthorized access detected. Application will be disabled.', 'color: #dc3545; font-size: 14px;');
+            }
+            
+            static detectDevTools() {
+                let devtools = false;
+                const threshold = 200; // Increased threshold to reduce false positives
+                let consecutiveDetections = 0;
+                
+                setInterval(() => {
+                    if (!this.detectionActive) return;
+                    
+                    // More reliable detection - check both dimensions and require consistency
+                    const heightDiff = window.outerHeight - window.innerHeight;
+                    const widthDiff = window.outerWidth - window.innerWidth;
+                    
+                    if (heightDiff > threshold || widthDiff > threshold) {
+                        consecutiveDetections++;
+                        // Require 3 consecutive detections to avoid false positives
+                        if (consecutiveDetections >= 3) {
+                            this.triggerSecurity('Developer tools detected');
+                        }
+                    } else {
+                        consecutiveDetections = 0; // Reset counter
+                    }
+                }, 2000); // Check every 2 seconds instead of 1
+            }
+            
+            static detectDebugger() {
+                setInterval(() => {
+                    if (!this.detectionActive) return;
+                    
+                    // More sophisticated debugger detection
+                    const start = performance.now();
+                    try {
+                        debugger;
+                    } catch (e) {
+                        // Ignore errors
+                    }
+                    const end = performance.now();
+                    
+                    // Increased threshold and added try-catch for stability
+                    if (end - start > 200) { // Increased from 100 to 200ms
+                        this.triggerSecurity('Debugger detected');
+                    }
+                }, 3000); // Check every 3 seconds instead of 2
+            }
+            
+            static detectInspection() {
+                let elementCount = 0;
+                let stabilityCounter = 0;
+                
+                setInterval(() => {
+                    if (!this.detectionActive) return;
+                    
+                    const currentCount = document.querySelectorAll('*').length;
+                    
+                    // Only trigger if DOM changes are significant and repeated
+                    if (elementCount > 0) {
+                        const change = Math.abs(currentCount - elementCount);
+                        if (change > 100) { // Increased threshold from 50 to 100
+                            stabilityCounter++;
+                            if (stabilityCounter >= 2) { // Require 2 consecutive large changes
+                                this.triggerSecurity('DOM manipulation detected');
+                            }
+                        } else {
+                            stabilityCounter = 0; // Reset if change is small
+                        }
+                    }
+                    elementCount = currentCount;
+                }, 5000); // Check every 5 seconds instead of 3
+            }
+            
+            static triggerSecurity(reason) {
+                this.detectionActive = false;
+                document.body.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px;">
+                        <h1 style="color: #dc3545; margin-bottom: 20px;">🚫 Access Denied</h1>
+                        <p style="font-size: 18px; margin-bottom: 10px;">Security violation detected: ${reason}</p>
+                        <p style="color: #666;">Please use the app normally without developer tools.</p>
+                        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #FF6B35; color: white; border: none; border-radius: 5px; cursor: pointer;">Reload App</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // License Management System
+        class LicenseManager {
+            static validateLicenseFormat(licenseKey) {
+                // Accept both old format (6-6-6) and new GHL format (4-4-4)
+                const oldPattern = /^NSPIRE-\d{4}-[A-Z0-9]{6}-[A-Z0-9]{6}-[A-Z0-9]{6}$/;
+                const newPattern = /^NSPIRE-\d{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+                const upperKey = licenseKey.toUpperCase();
+                return oldPattern.test(upperKey) || newPattern.test(upperKey);
+            }
+            
+            static parseLicenseKey(licenseKey) {
+                const parts = licenseKey.toUpperCase().split('-');
+                if (parts.length !== 5) return null;
+                
+                return {
+                    prefix: parts[0],
+                    year: parts[1],
+                    segment1: parts[2],
+                    segment2: parts[3],
+                    segment3: parts[4],
+                    full: licenseKey.toUpperCase(),
+                    format: parts[2].length === 6 ? 'legacy' : 'ghl' // Detect format type
+                };
+            }
+            
+            static generateLicenseHash(licenseKey, deviceFingerprint) {
+                // Create a hash that combines license key with device fingerprint
+                const combined = licenseKey + '|' + deviceFingerprint;
+                return DeviceFingerprinting.hashString(combined);
+            }
+            
+            static async activateLicense(licenseKey) {
+                // Validate format
+                if (!this.validateLicenseFormat(licenseKey)) {
+                    throw new Error('Invalid license key format');
+                }
+                
+                const deviceFingerprint = DeviceFingerprinting.generateFingerprint();
+                const parsedLicense = this.parseLicenseKey(licenseKey);
+                
+                // Check if license is already stored locally
+                const existingLicense = this.getStoredLicense();
+                if (existingLicense && existingLicense.key === parsedLicense.full) {
+                    if (this.isLicenseValid(existingLicense)) {
+                        return existingLicense;
+                    }
+                }
+                
+                // Simulate license validation (in production, this would call your server)
+                const licenseData = await this.validateWithServer(parsedLicense.full, deviceFingerprint);
+                
+                // Store license locally
+                const licenseInfo = {
+                    key: parsedLicense.full,
+                    activatedAt: new Date().toISOString(),
+                    expiresAt: licenseData.expiresAt,
+                    plan: licenseData.plan,
+                    deviceFingerprint: deviceFingerprint,
+                    deviceCount: licenseData.deviceCount,
+                    maxDevices: licenseData.maxDevices,
+                    lastValidated: new Date().toISOString()
+                };
+                
+                localStorage.setItem('nspire_license', JSON.stringify(licenseInfo));
+                localStorage.setItem('nspire_device_id', deviceFingerprint);
+                
+                return licenseInfo;
+            }
+            
+            static async validateWithServer(licenseKey, deviceFingerprint) {
+                // For demo purposes, we'll simulate server validation
+                // In production, this would be a real API call
+                
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+                
+                // Simplified validation logic - only trial or annual
+                if (licenseKey.includes('DEMO') || licenseKey.includes('TRIAL')) {
+                    return {
+                        expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days
+                        plan: 'trial',
+                        deviceCount: 1,
+                        maxDevices: 1
+                    };
+                }
+                
+                // All other valid keys are annual licenses
+                return {
+                    expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
+                    plan: 'annual',
+                    deviceCount: 1,
+                    maxDevices: 2 // 2 devices for annual license
+                };
+            }
+            
+            static getStoredLicense() {
+                try {
+                    const stored = localStorage.getItem('nspire_license');
+                    return stored ? JSON.parse(stored) : null;
+                } catch (error) {
+                    console.error('Error reading stored license:', error);
+                    return null;
+                }
+            }
+            
+            static isLicenseValid(license) {
+                if (!license) return false;
+                
+                // Check if expired
+                if (new Date(license.expiresAt) < new Date()) {
+                    return false;
+                }
+                
+                // Check device fingerprint
+                const currentFingerprint = DeviceFingerprinting.generateFingerprint();
+                if (license.deviceFingerprint !== currentFingerprint) {
+                    // Allow some flexibility for browser updates, but not completely different devices
+                    console.warn('Device fingerprint mismatch - possible device change');
+                }
+                
+                return true;
+            }
+            
+            static getRemainingDays(license) {
+                if (!license) return 0;
+                const now = new Date();
+                const expiry = new Date(license.expiresAt);
+                const diffTime = expiry - now;
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+            
+            static clearLicense() {
+                localStorage.removeItem('nspire_license');
+                localStorage.removeItem('nspire_device_id');
+            }
+        }
+        
+        // QR Code Scanner
+        class QRScanner {
+            static stream = null;
+            static scanning = false;
+            
+            static async startScanner() {
+                try {
+                    const video = document.getElementById('qrVideo');
+                    const canvas = document.getElementById('qrCanvas');
+                    
+                    this.stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' } 
+                    });
+                    
+                    video.srcObject = this.stream;
+                    video.play();
+                    
+                    this.scanning = true;
+                    this.scanFrame(video, canvas);
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Camera access denied:', error);
+                    showLicenseMessage('Camera access required for QR scanning', 'error');
+                    return false;
+                }
+            }
+            
+            static stopScanner() {
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.stream = null;
+                }
+                this.scanning = false;
+                
+                const video = document.getElementById('qrVideo');
+                if (video) {
+                    video.srcObject = null;
+                }
+            }
+            
+            static scanFrame(video, canvas) {
+                if (!this.scanning) return;
+                
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Simple QR detection (in production, use a proper QR library like jsQR)
+                    const qrCode = this.detectQRCode(imageData);
+                    if (qrCode && qrCode.startsWith('NSPIRE-')) {
+                        this.stopScanner();
+                        document.getElementById('licenseKeyInput').value = qrCode;
+                        activateLicense();
+                        return;
+                    }
+                }
+                
+                requestAnimationFrame(() => this.scanFrame(video, canvas));
+            }
+            
+            static detectQRCode(imageData) {
+                // Simplified QR detection - in production, use jsQR library
+                // For demo purposes, we'll simulate QR detection
+                return null;
+            }
+        }
+        
+        // UI Functions
+        function showActivationMethod(method) {
+            // Update tabs
+            document.querySelectorAll('.method-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.activation-method').forEach(method => method.classList.remove('active'));
+            document.getElementById(method + 'Method').classList.add('active');
+        }
+        
+        function showLicenseMessage(message, type = 'info') {
+            const messageDiv = document.getElementById('licenseMessage');
+            messageDiv.textContent = message;
+            messageDiv.className = `license-message ${type}`;
+        }
+        
+        function clearLicenseMessage() {
+            const messageDiv = document.getElementById('licenseMessage');
+            messageDiv.className = 'license-message';
+        }
+        
+        async function activateLicense() {
+            const licenseKey = document.getElementById('licenseKeyInput').value.trim().toUpperCase();
+            
+            if (!licenseKey) {
+                showLicenseMessage('Please enter a license key', 'error');
+                return;
+            }
+            
+            try {
+                showLicenseMessage('Validating license...', 'info');
+                
+                const licenseInfo = await LicenseManager.activateLicense(licenseKey);
+                
+                showLicenseMessage('License activated successfully! ✅', 'success');
+                
+                setTimeout(() => {
+                    showMainApp(licenseInfo);
+                }, 1500);
+                
+            } catch (error) {
+                showLicenseMessage('❌ ' + error.message, 'error');
+            }
+        }
+        
+        function startQRScanner() {
+            QRScanner.startScanner();
+        }
+        
+        function stopQRScanner() {
+            QRScanner.stopScanner();
+        }
+        
+        function showPurchaseOptions() {
+            alert('Purchase NSPIRE Training Pro:\\n\\n🏠 Annual License: $59.99/year\\n🏢 Enterprise License: $199.99/year\\n\\nVisit: https://nspiretraining.com/purchase');
+        }
+        
+        function renewLicense() {
+            // Redirect to GHL purchase page where users can buy activation key with QR code
+            window.open('https://nspiretrainingapp.com', '_blank');
+        }
+        
+        function showDemoMode() {
+            // Limited demo mode
+            const demoLicense = {
+                key: 'DEMO-MODE',
+                plan: 'demo',
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+                deviceFingerprint: DeviceFingerprinting.generateFingerprint()
+            };
+            showMainApp(demoLicense);
+        }
+        
+        function testActivation() {
+            document.getElementById('licenseKeyInput').value = 'NSPIRE-2025-DEMO01-TEST01-TRIAL1';
+            activateLicense();
+        }
+        
+        function showMainApp(licenseInfo) {
+            // Hide license page and show main app
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('searchPage').classList.add('active');
+            
+            // Start security protection
+            AntiTamper.startProtection();
+            
+            // Display license status
+            displayLicenseStatus(licenseInfo);
+            
+            // Continue with normal app initialization - only after license validation
+            showSearchPage();
+        }
+        
+        function displayLicenseStatus(licenseInfo) {
+            const remainingDays = LicenseManager.getRemainingDays(licenseInfo);
+            const expiryDate = new Date(licenseInfo.expiresAt);
+            const formattedDate = expiryDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            
+            let statusText = '';
+            if (licenseInfo.plan === 'demo' || licenseInfo.plan === 'trial') {
+                statusText = 'Trial';
+            } else if (licenseInfo.plan === 'enterprise') {
+                statusText = 'Enterprise';
+            } else {
+                statusText = 'Active';
+            }
+            
+            const statusHtml = `
+                <div class="license-status-compact">
+                    Status: ${statusText} • Expires: ${formattedDate}
+                </div>
+            `;
+            
+            // Add status to header or appropriate location
+            const header = document.querySelector('.header') || document.querySelector('#searchPage');
+            if (header && !header.querySelector('.license-status-compact')) {
+                header.insertAdjacentHTML('beforeend', statusHtml);
+            }
+        }
+        
+        // Initialize license system
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clear any existing license for testing
+            LicenseManager.clearLicense();
+            
+            // Force show license activation page
+            document.getElementById('loginPage').classList.add('active');
+            document.getElementById('searchPage').classList.remove('active');
+            
+            // Check for existing valid license (disabled for now)
+            // const existingLicense = LicenseManager.getStoredLicense();
+            // if (existingLicense && LicenseManager.isLicenseValid(existingLicense)) {
+            //     showMainApp(existingLicense);
+            // } else {
+            //     LicenseManager.clearLicense();
+            // }
+        });
+        
+        // Disable context menu and common shortcuts
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+                (e.ctrlKey && e.key === 'u')) {
+                e.preventDefault();
+                AntiTamper.triggerSecurity('Keyboard shortcut detected');
+            }
+        });
 
         function showCreateAccount() {
             alert('Account creation will be handled through App Store.\nSubscription: $4.99/month or $45/year');
@@ -2323,109 +2989,8 @@ Contact support for subscription assistance.`);
                 saveUserSession();
             }
 
-            // PWA Installation Logic
-            let deferredPrompt;
-            const installBanner = document.getElementById('installBanner');
-            const installButton = document.getElementById('installButton');
-            const dismissButton = document.getElementById('dismissButton');
-
-            // Check if app is already installed
-            function isAppInstalled() {
-                return window.matchMedia('(display-mode: standalone)').matches || 
-                       window.navigator.standalone === true ||
-                       localStorage.getItem('pwa-dismissed') === 'true';
-            }
-
-            // Detect platform for appropriate instructions
-            function getInstallInstructions() {
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                const isAndroid = /Android/.test(navigator.userAgent);
-                
-                if (isIOS) {
-                    return {
-                        emoji: '🍎',
-                        text: 'Tap Share button, then "Add to Home Screen"',
-                        showButton: false
-                    };
-                } else if (isAndroid) {
-                    return {
-                        emoji: '📱',
-                        text: 'Install this app for the best experience!',
-                        showButton: true
-                    };
-                } else {
-                    return {
-                        emoji: '💻',
-                        text: 'Install this app for offline access!',
-                        showButton: true
-                    };
-                }
-            }
-
-            // Show install banner
-            function showInstallBanner() {
-                if (isAppInstalled()) return;
-                
-                const instructions = getInstallInstructions();
-                const installText = document.querySelector('.install-text');
-                
-                installText.innerHTML = `${instructions.emoji} ${instructions.text}`;
-                
-                if (!instructions.showButton) {
-                    installButton.style.display = 'none';
-                } else {
-                    installButton.style.display = 'inline-block';
-                }
-                
-                installBanner.classList.add('show');
-            }
-
-            // Handle beforeinstallprompt event (Android Chrome)
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                showInstallBanner();
-            });
-
-            // Install button click handler
-            installButton.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    
-                    if (outcome === 'accepted') {
-                        console.log('PWA installed successfully');
-                    }
-                    
-                    deferredPrompt = null;
-                    installBanner.classList.remove('show');
-                } else {
-                    // Fallback: show manual instructions
-                    alert('To install:\n\nAndroid: Tap menu (⋮) → "Add to Home screen"\niOS: Tap Share (□↗) → "Add to Home Screen"');
-                }
-            });
-
-            // Dismiss button click handler
-            dismissButton.addEventListener('click', () => {
-                installBanner.classList.remove('show');
-                localStorage.setItem('pwa-dismissed', 'true');
-            });
-
-            // Show banner after app loads (if not installed and not dismissed)
-            window.addEventListener('load', () => {
-                setTimeout(() => {
-                    if (!isAppInstalled() && !deferredPrompt) {
-                        showInstallBanner();
-                    }
-                }, 3000); // Show after 3 seconds
-            });
-
-            // Track if app was successfully installed
-            window.addEventListener('appinstalled', () => {
-                console.log('PWA was installed');
-                installBanner.classList.remove('show');
-                localStorage.setItem('pwa-installed', 'true');
-            });
+            // PWA Installation Logic - COMPLETELY REMOVED
+            // All PWA code disabled to prevent any notifications
         };
     </script>
 </body>
