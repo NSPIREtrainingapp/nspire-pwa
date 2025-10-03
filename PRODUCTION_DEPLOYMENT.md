@@ -25,8 +25,8 @@ Your PWA is now fully configured with GoHighLevel integration and ready for prod
 - `paid_subscriber` - Active paying customers
 - `trial_active` - Users in trial period
 - `trial_expired` - Trial users who haven't converted
-- `standard_59` - $59.99 annual subscribers
-- `legacy_39` - Legacy $39 subscribers (if any)
+- `standard_59` - $59.99 annual subscribers (current pricing)
+- `legacy_39` - **CRITICAL**: $39.99 legacy subscribers locked for life
 
 ## 🎯 Production File Structure
 
@@ -71,9 +71,11 @@ Your PWA is already configured for app stores with:
 4. **Renewal**: System automatically checks subscription status weekly
 
 ### Subscription Tiers:
-- **Trial**: 14-day free access
-- **Standard**: $59.99/year (tag: `standard_59`)
-- **Legacy**: $39/year (tag: `legacy_39`) - if you have existing customers
+- **Trial**: 14-day free access (tag: `trial_active`)
+- **Standard**: $59.99/year (tags: `paid_subscriber` + `standard_59`)
+- **Legacy**: $39.99/year **LOCKED FOR LIFE** (tags: `paid_subscriber` + `legacy_39`)
+
+> **⚠️ CRITICAL**: Legacy customers with `legacy_39` tag maintain $39.99 pricing for the lifetime of their account. This tag is essential for grandfathering existing customers and honoring lifetime pricing commitments.
 
 ## 🔄 Weekly Sync Process
 

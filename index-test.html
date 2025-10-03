@@ -234,8 +234,16 @@
                     const data = await response.json();
                     updateLocalUserDatabase(data.contacts);
                     localStorage.setItem('lastGHLSync', Date.now().toString());
+                    
+                    // Count users by pricing tier
+                    const usersByTier = Object.values(authorizedUsers).reduce((acc, user) => {
+                        if (!user.email || user.email.includes('demo')) return acc;
+                        acc[user.plan] = (acc[user.plan] || 0) + 1;
+                        return acc;
+                    }, {});
+                    
                     console.log(`✅ GHL sync completed - Found ${data.contacts?.length || 0} contacts`);
-                    console.log(`📊 Active subscribers: ${Object.keys(authorizedUsers).filter(email => !email.includes('demo')).length}`);
+                    console.log(`📊 Active users: Trial: ${usersByTier.trial || 0}, Legacy $39: ${usersByTier.legacy_39 || 0}, Standard $59: ${usersByTier.standard_59 || 0}`);
                 } else {
                     console.warn('⚠️ GHL sync failed, using cached data');
                 }
@@ -250,22 +258,41 @@
             const newUsers = {};
             
             contacts.forEach(contact => {
-                // Only include active subscribers
+                // Only include active subscribers and trial users
                 if (contact.tags && (contact.tags.includes('paid_subscriber') || contact.tags.includes('trial_active'))) {
                     const email = contact.email.toLowerCase();
-                    const subscriptionEnd = new Date(contact.customFields?.subscription_tier ? 
-                        Date.now() + (365 * 24 * 60 * 60 * 1000) : // 1 year for paid
-                        Date.now() + (14 * 24 * 60 * 60 * 1000));   // 14 days for trial
+                    
+                    // Determine subscription type and pricing
+                    let plan = 'trial';
+                    let subscriptionEnd;
+                    
+                    if (contact.tags.includes('trial_active')) {
+                        plan = 'trial';
+                        subscriptionEnd = new Date(Date.now() + (14 * 24 * 60 * 60 * 1000)); // 14 days
+                    } else if (contact.tags.includes('legacy_39')) {
+                        plan = 'legacy_39';
+                        subscriptionEnd = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)); // 1 year
+                    } else if (contact.tags.includes('standard_59')) {
+                        plan = 'standard_59';
+                        subscriptionEnd = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)); // 1 year
+                    } else {
+                        // Default for paid subscribers without specific plan tag
+                        plan = 'standard_59';
+                        subscriptionEnd = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)); // 1 year
+                    }
                     
                     newUsers[email] = {
                         password: contact.customFields?.app_password || 'temp123',
-                        plan: contact.customFields?.subscription_tier || 'trial',
-                        name: contact.firstName + ' ' + contact.lastName,
+                        plan: plan,
+                        name: (contact.firstName || '') + ' ' + (contact.lastName || ''),
                         expiresAt: subscriptionEnd.getTime(),
                         ghlContactId: contact.id,
                         lastSync: Date.now(),
                         appUserId: contact.customFields?.app_user_id || contact.id,
-                        subscriberNumber: contact.customFields?.subscriber_number
+                        subscriberNumber: contact.customFields?.subscriber_number,
+                        pricingTier: contact.tags.includes('legacy_39') ? '$39.99 Legacy' : 
+                                   contact.tags.includes('standard_59') ? '$59.99 Standard' : 
+                                   contact.tags.includes('trial_active') ? 'Free Trial' : 'Standard'
                     };
                 }
             });
