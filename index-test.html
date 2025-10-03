@@ -44,6 +44,13 @@
             text-align: center;
         }
         
+        .logo {
+            max-width: 200px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+        
         .login-screen {
             padding: 40px 20px;
             text-align: center;
@@ -94,14 +101,6 @@
             padding: 20px;
         }
         
-        .demo-info {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
         .error {
             color: #d32f2f;
             margin-top: 10px;
@@ -118,19 +117,10 @@
         <!-- Login Screen -->
         <div id="loginScreen" class="login-screen">
             <div class="header">
-                <h1>🏠 NSPIRE Training Pro</h1>
-                <p>Professional Property Management Training</p>
+                <img src="logo.png" alt="NSPIRE Training App" class="logo" style="max-width: 200px; height: auto;">
             </div>
             
             <div class="login-form">
-                <h2>Secure Login</h2>
-                
-                <div class="demo-info">
-                    <strong>Demo Credentials:</strong><br>
-                    Email: demo@nspire.com<br>
-                    Password: demo123
-                </div>
-                
                 <form id="loginForm">
                     <div class="form-group">
                         <label for="email">Email:</label>
