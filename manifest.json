@@ -1,20 +1,31 @@
 {
-  "name": "NSPIRE Training App",
-  "short_name": "NSPIRE",
-  "description": "Quick and easy search for HUD NSPIRE Standards and Deficiency Criteria with image examples and scoring calculator",
-  "start_url": "/",
+  "name": "NSPIRE Training Pro",
+  "short_name": "NSPIRE Pro",
+  "description": "Professional NSPIRE training and scoring calculator for property management teams",
+  "start_url": "/#app-session",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#ffffff",
   "theme_color": "#FF6B35",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "scope": "/",
-  "categories": ["education", "reference", "utilities"],
+  "categories": ["education", "business", "productivity"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "screenshots": [
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "NSPIRE Training Interface"
     }
   ],
   "icons": [
@@ -29,6 +40,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Calculator",
+      "short_name": "Calc",
+      "description": "NSPIRE Scoring Calculator",
+      "url": "/#calculator",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

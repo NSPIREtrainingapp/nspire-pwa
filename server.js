@@ -1,181 +1,118 @@
 const express = require('express');
-const crypto = require('crypto');
 const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config();
 
+// Import routes
+const membershipRoutes = require('./routes/membership');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ============================================
+// SECURITY & MIDDLEWARE
+// ============================================
+
 // Security middleware
 app.use(helmet());
+
+// CORS configuration
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:8080',
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Raw body parser for webhook signature verification
-app.use('/webhooks', express.raw({ type: 'application/json' }));
-app.use(express.json());
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// GHL Public Key (get this from GoHighLevel documentation)
-const GHL_PUBLIC_KEY = process.env.GHL_PUBLIC_KEY || `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
------END PUBLIC KEY-----`;
-
-// Webhook signature verification middleware
-function verifyGHLSignature(req, res, next) {
-    try {
-        const signature = req.headers['x-wh-signature'];
-        const body = req.body;
-        
-        if (!signature) {
-            console.log('⚠️ Missing webhook signature');
-            return res.status(401).json({ error: 'Missing signature' });
-        }
-        
-        // Create verifier
-        const verifier = crypto.createVerify('SHA256');
-        verifier.update(body);
-        
-        // Verify signature with GHL public key
-        const isValid = verifier.verify(GHL_PUBLIC_KEY, signature, 'base64');
-        
-        if (!isValid) {
-            console.log('🚫 Invalid webhook signature');
-            return res.status(401).json({ error: 'Invalid signature' });
-        }
-        
-        console.log('✅ Webhook signature verified');
-        
-        // Parse body for processing
-        req.body = JSON.parse(body.toString());
-        next();
-    } catch (error) {
-        console.error('💥 Signature verification error:', error);
-        return res.status(401).json({ error: 'Signature verification failed' });
-    }
-}
-
-// GHL Webhook endpoints
-app.post('/webhooks/contact-update', verifyGHLSignature, (req, res) => {
-    // Respond quickly to avoid timeout (< 5 seconds)
-    res.status(200).json({ received: true, timestamp: new Date().toISOString() });
-    
-    // Process asynchronously
-    setImmediate(() => processContactUpdate(req.body));
+// Request logging
+app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`${timestamp} - ${req.method} ${req.path} - IP: ${req.ip}`);
+    next();
 });
 
-app.post('/webhooks/subscription-change', verifyGHLSignature, (req, res) => {
-    // Respond quickly to avoid timeout
-    res.status(200).json({ received: true, timestamp: new Date().toISOString() });
-    
-    // Process asynchronously
-    setImmediate(() => processSubscriptionChange(req.body));
-});
+// ============================================
+// ROUTES
+// ============================================
 
-// API endpoints for PWA authentication
-app.get('/api/user/status/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        console.log(`🔍 Checking status for user: ${userId}`);
-        
-        // TODO: Replace with actual database query
-        const userStatus = await getUserStatus(userId);
-        res.json(userStatus);
-    } catch (error) {
-        console.error('💥 Error getting user status:', error);
-        res.status(500).json({ error: 'Failed to get user status' });
-    }
-});
+// API routes
+app.use('/api', membershipRoutes);
 
-app.post('/api/auth/verify', async (req, res) => {
-    try {
-        const { token } = req.body;
-        console.log('🔐 Verifying user token');
-        
-        // TODO: Verify with GHL API or your database
-        const user = await verifyUserToken(token);
-        res.json({ valid: true, user });
-    } catch (error) {
-        console.error('💥 Token verification failed:', error);
-        res.status(401).json({ valid: false, error: 'Invalid token' });
-    }
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'healthy', 
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({
+        service: 'NSPIRE Training App - Authentication Backend',
+        version: '2.0.0',
+        status: 'running',
         timestamp: new Date().toISOString(),
-        service: 'nspire-backend'
+        endpoints: {
+            login: 'POST /api/login',
+            membershipStatus: 'GET /api/membership/status',
+            activityLog: 'POST /api/activity/login',
+            health: 'GET /api/health'
+        }
     });
 });
 
-// Async processing functions
-async function processContactUpdate(payload) {
-    try {
-        console.log('📧 Processing contact update:', payload.type || 'contact_update');
-        
-        // TODO: Implement contact update logic
-        // - Update user database
-        // - Send notifications
-        // - Update subscription status if needed
-        
-    } catch (error) {
-        console.error('💥 Error processing contact update:', error);
-    }
-}
+// ============================================
+// ERROR HANDLING
+// ============================================
 
-async function processSubscriptionChange(payload) {
-    try {
-        console.log('💳 Processing subscription change:', payload.type || 'subscription_change');
-        
-        // TODO: Implement subscription logic
-        // - Update user subscription status
-        // - Grant/revoke app access
-        // - Send confirmation emails
-        // - Log billing events
-        
-    } catch (error) {
-        console.error('💥 Error processing subscription change:', error);
-    }
-}
-
-// TODO: Implement these functions with your chosen database
-async function getUserStatus(userId) {
-    // Mock response - replace with real database query
-    return {
-        userId,
-        subscriptionActive: true,
-        planType: 'premium',
-        expiresAt: '2025-12-31T23:59:59Z',
-        lastChecked: new Date().toISOString()
-    };
-}
-
-async function verifyUserToken(token) {
-    // Mock response - replace with GHL API call or database query
-    return {
-        id: 'user_' + Date.now(),
-        email: 'user@example.com',
-        subscriptionActive: true,
-        verified: true
-    };
-}
-
-// Error handling middleware
-app.use((error, req, res, next) => {
-    console.error('💥 Unhandled error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+// 404 handler
+app.use('*', (req, res) => {
+    res.status(404).json({
+        error: 'Endpoint not found',
+        path: req.originalUrl,
+        method: req.method
+    });
 });
 
-// Start server
+// Global error handler
+app.use((error, req, res, next) => {
+    console.error('💥 Unhandled server error:', error);
+    
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// ============================================
+// SERVER STARTUP
+// ============================================
+
 app.listen(PORT, () => {
-    console.log(`🚀 NSPIRE Backend running on port ${PORT}`);
-    console.log(`🔐 Webhook signature verification: ${GHL_PUBLIC_KEY ? 'ENABLED' : 'DISABLED'}`);
+    console.log('\n🚀 NSPIRE Authentication Backend Started');
+    console.log('==========================================');
+    console.log(`📡 Server running on port ${PORT}`);
     console.log(`🌐 CORS origin: ${process.env.FRONTEND_URL || 'http://localhost:8080'}`);
-    console.log(`📡 Health check: http://localhost:${PORT}/health`);
+    console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'CONFIGURED ✅' : 'MISSING ❌'}`);
+    console.log(`📍 GHL Location: ${process.env.GHL_LOCATION_ID ? 'CONFIGURED ✅' : 'MISSING ❌'}`);
+    console.log(`🔑 GHL Token: ${process.env.GHL_TOKEN ? 'CONFIGURED ✅' : 'MISSING ❌'}`);
+    console.log(`💳 Renewal URL: ${process.env.RENEW_URL || 'NOT SET'}`);
+    console.log(`📧 Support Email: ${process.env.SUPPORT_EMAIL || 'NOT SET'}`);
+    console.log('\n🔗 Available endpoints:');
+    console.log(`   • Health Check: http://localhost:${PORT}/api/health`);
+    console.log(`   • Login: POST http://localhost:${PORT}/api/login`);
+    console.log(`   • Status: GET http://localhost:${PORT}/api/membership/status`);
+    console.log('\n🧪 Demo credentials: demo@nspire.app / demo123');
+    console.log('==========================================\n');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, shutting down gracefully...');
+    process.exit(0);
+});
+
+process.on('SIGINT', () => {
+    console.log('\n🛑 SIGINT received, shutting down gracefully...');
+    process.exit(0);
 });
 
 module.exports = app;

@@ -2,10 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>NSPIRE Training App</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#FF6B35">
+    
+    <!-- Security and Native App Enhancements -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NSPIRE">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Anti-sharing and security measures -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https:; frame-ancestors 'none';">
+    
+    <!-- Disable browser features for native feel -->
+    <style>
+        /* Disable text selection and context menus for native feel */
+        body, div, span, p, h1, h2, h3, h4, h5, h6 {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Allow images and interactive elements to work normally */
+        input, textarea, img, button, a {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: auto;
+        }
+        
+        /* Hide URL bar only in standalone mode */
+        @media all and (display-mode: standalone) {
+            body {
+                padding-top: env(safe-area-inset-top);
+            }
+        }
+    </style>
+    
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -646,11 +686,28 @@
 
         .modal-close {
             position: absolute;
-            top: -40px;
-            right: 0;
+            top: 10px;
+            right: 10px;
             color: white;
-            font-size: 35px;
+            background: rgba(0,0,0,0.7);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
             cursor: pointer;
+            z-index: 1001;
+            border: 2px solid rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255,107,53,0.9);
+            border-color: rgba(255,255,255,0.8);
+            transform: scale(1.1);
         }
 
         .loading {
@@ -748,6 +805,88 @@
         .loc-score-badge {
             background: #fff59d;
         }
+        
+        /* Mobile-specific fixes for Samsung S24 and other mobile devices */
+        @media screen and (max-width: 768px) {
+            body {
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+            }
+            
+            .container {
+                max-width: 100%;
+                width: 100%;
+                margin: 0;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+            
+            .header {
+                padding: var(--spacing-md);
+            }
+            
+            .content {
+                padding: var(--spacing-md);
+            }
+            
+            /* Fix input overflow issues */
+            .units-input {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+                margin: 0;
+            }
+            
+            /* Ensure all form elements stay within bounds */
+            input, select, textarea {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            
+            /* Fix any wide elements */
+            * {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            
+            /* Improve touch targets */
+            button, .btn {
+                min-height: 44px;
+                padding: var(--spacing-md) var(--spacing-lg);
+            }
+            
+            /* Fix modal sizing on mobile */
+            .modal-content {
+                width: 95%;
+                max-width: 95%;
+                margin: 5% auto;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+        }
+        
+        /* Samsung S24 specific viewport fix */
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 0;
+            }
+            
+            .header, .content {
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+            
+            /* Ensure calculator inputs don't overflow */
+            .score-calculator {
+                padding: var(--spacing-md);
+                margin: 0;
+            }
+            
+            .units-input {
+                font-size: 16px; /* Prevent zoom on iOS */
+                padding: var(--spacing-sm);
+            }
+        }
     </style>
 </head>
 <body>
@@ -786,16 +925,13 @@
                 <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Login</h2>
                 <div class="form-group">
                     <label class="form-label">Email</label>
-                    <input type="email" class="form-input" required placeholder="Enter your email">
+                    <input type="email" id="email" class="form-input" required placeholder="Enter your email">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Password</label>
-                    <input type="password" class="form-input" required placeholder="Enter your password">
+                    <input type="password" id="password" class="form-input" required placeholder="Enter your password">
                 </div>
                 <button type="submit" class="btn">Login</button>
-                <div class="link" onclick="showCreateAccount()">
-                    Create Account - $4.99/month or $45/year
-                </div>
             </form>
         </div>
 
@@ -834,6 +970,57 @@
     </div>
 
     <script>
+        // URL Protection - Check immediately on load
+        (function() {
+            const currentHash = window.location.hash;
+            const isValidSession = currentHash.startsWith('#s') && currentHash.length >= 10;
+            const hasValidPath = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
+            
+            // If this looks like a shared URL without proper session, redirect to clean entry
+            if (!isValidSession && (document.referrer === '' || !document.referrer.includes(window.location.hostname))) {
+                // This might be a shared URL, show access page instead
+                document.body.innerHTML = `
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        color: white;
+                        text-align: center;
+                        padding: 20px;
+                    ">
+                        <div style="background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; max-width: 400px;">
+                            <h1 style="margin: 0 0 20px 0; font-size: 24px;">🔐 Secure Access Required</h1>
+                            <p style="margin: 0 0 30px 0; font-size: 16px; line-height: 1.5;">
+                                This app requires secure authentication.<br>
+                                Please use the official app download link.
+                            </p>
+                            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
+                                <p style="margin: 0; font-size: 14px;">
+                                    📱 <strong>Property Managers:</strong><br>
+                                    Contact your administrator for the official app link
+                                </p>
+                            </div>
+                            <button onclick="window.location.reload()" style="
+                                background: #FF6B35;
+                                color: white;
+                                border: none;
+                                padding: 12px 24px;
+                                border-radius: 25px;
+                                font-size: 16px;
+                                cursor: pointer;
+                                margin-top: 20px;
+                            ">Try Again</button>
+                        </div>
+                    </div>
+                `;
+                return; // Stop execution
+            }
+        })();
+        
         // ============================================
         // NSPIRE TRAINING PWA - GOHIGHLEVEL INTEGRATION
         // ============================================
@@ -873,341 +1060,687 @@
         // GOHIGHLEVEL API INTEGRATION
         // ============================================
         
-        // ⚠️ CONFIGURATION REQUIRED - Replace these values with your GoHighLevel credentials
-        // Get these from your GoHighLevel account:
-        // 1. Location ID: Settings → Locations → Location Details
-        // 2. API Key: Settings → Integrations → API Keys → Create New Key
-        // 3. Update the webhook URLs in GHL to point to your server
+        // ⚠️ CONFIGURATION REQUIRED - Replace these values with your actual settings
         
-        // GHL Configuration
-        const GHL_CONFIG = {
-            apiUrl: 'https://services.leadconnectorhq.com/v1',
-            locationId: 'your_ghl_location_id_here', // 🔧 REPLACE WITH YOUR LOCATION ID
-            apiKey: 'your_ghl_api_key_here', // 🔧 REPLACE WITH YOUR API KEY
-            authUrl: 'https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://your-domain.com/auth&client_id=your_client_id&scope=contacts.readonly contacts.write'
+        // App Configuration
+        const APP_CONFIG = {
+            // Backend API (your server)
+            apiUrl: 'http://localhost:3001/api', // 🔧 REPLACE WITH YOUR BACKEND URL
+            
+            // GoHighLevel Settings (for backend use)
+            ghlApiBase: 'https://services.leadconnectorhq.com',
+            ghlToken: 'your_sub_account_private_token', // 🔧 REPLACE WITH YOUR TOKEN
+            ghlLocationId: 'your_location_id', // 🔧 REPLACE WITH YOUR LOCATION ID
+            
+            // App Settings
+            renewUrl: 'https://your-customer-portal.com/renew', // 🔧 REPLACE WITH RENEWAL LINK
+            supportEmail: 'support@nspiretrainingapp.com',
+            sessionTtlHours: 24,
+            graceTtlHours: 168, // 7 days
+            loginTimeoutMs: 1200
         };
 
-        // Subscription Configuration
-        const SUBSCRIPTION_CONFIG = {
-            trialDays: 14,
-            gracePeriodDays: 7,
-            tiers: {
-                legacy: { price: 39.99, limit: 5000, tag: 'legacy_39' },
-                standard: { price: 59.99, tag: 'standard_59' }
-            },
-            tags: {
-                trial: 'trial_active',
-                paid: 'paid_subscriber',
-                legacy: 'legacy_39',
-                standard: 'standard_59',
-                cancelled: 'cancelled'
-            }
+        // Session Management
+        let currentSession = null;
+        let lastVerifiedAt = null;
+        let graceMode = false;
+
+        // Cache for offline support
+        const STORAGE_KEYS = {
+            session: 'nspire_session',
+            lastVerified: 'nspire_last_verified',
+            membership: 'nspire_membership_cache'
         };
 
-        // User Session Management
-        let currentUser = null;
-        let userSubscription = null;
-        let lastSyncTime = null;
-        let offlineMode = false;
-
         // ============================================
-        // GHL API FUNCTIONS
+        // AUTHENTICATION SERVICE
         // ============================================
 
-        class GHLApi {
+        // Bulletproof Security System
+        class SecurityManager {
             constructor() {
-                this.baseUrl = GHL_CONFIG.apiUrl;
-                this.locationId = GHL_CONFIG.locationId;
-                this.apiKey = GHL_CONFIG.apiKey;
+                this.deviceFingerprint = null;
+                this.sessionToken = null;
+                this.lastActivity = Date.now();
+                this.maxInactivity = 30 * 60 * 1000; // 30 minutes
+                this.init();
+            }
+            
+            // Generate unique device fingerprint
+            generateDeviceFingerprint() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillText('Device fingerprint', 2, 2);
                 
-                // Validate configuration
-                if (!this.locationId || this.locationId === 'your_ghl_location_id_here') {
-                    console.error('❌ GoHighLevel Location ID not configured');
-                    this.configured = false;
-                } else if (!this.apiKey || this.apiKey === 'your_ghl_api_key_here') {
-                    console.error('❌ GoHighLevel API Key not configured');
-                    this.configured = false;
+                const fingerprint = {
+                    screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    canvas: canvas.toDataURL(),
+                    memory: navigator.deviceMemory || 'unknown',
+                    cores: navigator.hardwareConcurrency || 'unknown',
+                    vendor: navigator.vendor || 'unknown'
+                };
+                
+                return btoa(JSON.stringify(fingerprint)).substring(0, 32);
+            }
+            
+            // Initialize security measures
+            init() {
+                this.deviceFingerprint = this.generateDeviceFingerprint();
+                this.sessionToken = this.generateSessionToken();
+                
+                // Only apply strict security if installed as PWA
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                   window.navigator.standalone ||
+                                   document.referrer.includes('android-app://');
+                
+                if (isStandalone) {
+                    // Disable right-click context menu in standalone mode
+                    document.addEventListener('contextmenu', (e) => e.preventDefault());
+                    
+                    // Disable common keyboard shortcuts in standalone mode
+                    document.addEventListener('keydown', (e) => {
+                        if (e.ctrlKey && (e.key === 'u' || e.key === 's')) {
+                            e.preventDefault();
+                        }
+                        if (e.key === 'F12') {
+                            e.preventDefault();
+                        }
+                    });
+                }
+                
+                // Always monitor for multiple tabs and sessions
+                this.startTabMonitoring();
+                this.startSessionMonitoring();
+                
+                // Always apply URL protection
+                this.obfuscateURL();
+                
+                // Show installation reminder if not in standalone
+                if (!isStandalone) {
+                    this.showInstallationReminder();
+                }
+            }
+            
+            generateSessionToken() {
+                return 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+            }
+            
+            // Anti-sharing: proper URL obfuscation
+            obfuscateURL() {
+                // Always apply URL obfuscation for security
+                const currentHash = window.location.hash;
+                const sessionHash = '#s' + this.sessionToken.substring(5, 15);
+                
+                if (currentHash !== sessionHash) {
+                    // Replace the URL without page reload
+                    window.history.replaceState({}, document.title, sessionHash);
+                }
+                
+                // Change document title to prevent easy identification
+                document.title = 'Secure Training Session';
+                
+                // Add URL protection - new sessions get new URLs
+                setInterval(() => {
+                    const newSessionHash = '#s' + Math.random().toString(36).substring(2, 12);
+                    window.history.replaceState({}, document.title, newSessionHash);
+                }, 10 * 60 * 1000); // Change URL every 10 minutes
+            }
+            
+            // Monitor for multiple tabs (anti-sharing)
+            startTabMonitoring() {
+                const sessionKey = 'nspire_active_session';
+                const tabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).substring(2);
+                
+                localStorage.setItem(sessionKey, tabId);
+                
+                setInterval(() => {
+                    const currentSession = localStorage.getItem(sessionKey);
+                    if (currentSession !== tabId) {
+                        this.handleSecurityViolation('Multiple tabs detected');
+                    }
+                }, 2000);
+                
+                window.addEventListener('beforeunload', () => {
+                    localStorage.removeItem(sessionKey);
+                });
+            }
+            
+            // Session timeout and activity monitoring
+            startSessionMonitoring() {
+                // Update activity on user interaction
+                ['click', 'touchstart', 'keydown', 'scroll'].forEach(event => {
+                    document.addEventListener(event, () => {
+                        this.lastActivity = Date.now();
+                    });
+                });
+                
+                // Check for inactivity
+                setInterval(() => {
+                    if (Date.now() - this.lastActivity > this.maxInactivity) {
+                        this.handleSessionTimeout();
+                    }
+                }, 60000); // Check every minute
+            }
+            
+            // Local session validation (no backend needed)
+            async validateSession() {
+                const token = this.getStoredToken();
+                if (token && token.startsWith('local_')) {
+                    // Session is valid if token exists and is local
+                    return true;
+                }
+                return false;
+            }
+            
+            // Handle security violations (less severe)
+            handleSecurityViolation(reason) {
+                console.warn('Security warning:', reason);
+                
+                // Only clear storage for serious violations
+                if (reason.includes('Multiple tabs') || reason.includes('Session validation failed')) {
+                    localStorage.setItem('security_warning', reason);
+                    // Show warning instead of immediately closing
+                    alert('Security Notice: ' + reason + '. Please use only one device/tab.');
+                }
+                
+                // Only redirect for the most serious violations
+                if (reason.includes('automated activity')) {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.reload();
+                }
+            }
+            
+            // Handle session timeout
+            handleSessionTimeout() {
+                alert('Session expired due to inactivity. Please log in again.');
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+            }
+            
+            // Get device info for backend validation
+            getDeviceInfo() {
+                return {
+                    fingerprint: this.deviceFingerprint,
+                    sessionToken: this.sessionToken,
+                    timestamp: Date.now()
+                };
+            }
+            
+            // Show installation reminder
+            showInstallationReminder() {
+                setTimeout(() => {
+                    const banner = document.createElement('div');
+                    banner.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        background: #FF6B35;
+                        color: white;
+                        padding: 10px;
+                        text-align: center;
+                        font-size: 14px;
+                        z-index: 10000;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                    `;
+                    banner.innerHTML = `
+                        📱 For best security, install this app! Tap menu → "Add to Home Screen" 
+                        <button onclick="this.parentElement.remove()" style="
+                            background: rgba(255,255,255,0.2);
+                            border: none;
+                            color: white;
+                            padding: 5px 10px;
+                            margin-left: 10px;
+                            border-radius: 3px;
+                            cursor: pointer;
+                        ">✕</button>
+                    `;
+                    document.body.appendChild(banner);
+                    
+                    // Auto-remove after 10 seconds
+                    setTimeout(() => {
+                        if (banner.parentElement) banner.remove();
+                    }, 10000);
+                }, 3000); // Show after 3 seconds
+            }
+        }
+        
+        // Initialize security manager
+        const securityManager = new SecurityManager();
+        
+        class AuthService {
+            constructor() {
+                this.apiUrl = APP_CONFIG.apiUrl;
+                this.sessionToken = this.getStoredToken();
+            }
+
+            // Store/retrieve session token
+            getStoredToken() {
+                return localStorage.getItem(STORAGE_KEYS.session);
+            }
+
+            setStoredToken(token) {
+                if (token) {
+                    localStorage.setItem(STORAGE_KEYS.session, token);
+                    this.sessionToken = token;
                 } else {
-                    console.log('✅ GoHighLevel API configured');
-                    this.configured = true;
+                    localStorage.removeItem(STORAGE_KEYS.session);
+                    this.sessionToken = null;
                 }
             }
 
-            async makeRequest(endpoint, method = 'GET', data = null) {
-                if (!this.configured) {
-                    throw new Error('GoHighLevel API not configured. Please update GHL_CONFIG with your credentials.');
-                }
-                
-                try {
-                    const options = {
-                        method,
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json',
-                            'Version': '2021-07-28'
-                        }
-                    };
+            // Make authenticated API requests
+            async apiCall(endpoint, method = 'GET', data = null) {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include' // Include cookies for session
+                };
 
-                    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-                        options.body = JSON.stringify(data);
+                // Add authorization header if we have a token
+                if (this.sessionToken) {
+                    options.headers['Authorization'] = `Bearer ${this.sessionToken}`;
+                }
+
+                if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+                    options.body = JSON.stringify(data);
+                }
+
+                try {
+                    const response = await fetch(`${this.apiUrl}${endpoint}`, options);
+                    
+                    if (response.status === 401) {
+                        // Token expired or invalid
+                        this.clearSession();
+                        throw new Error('Authentication required');
                     }
 
-                    const response = await fetch(`${this.baseUrl}${endpoint}`, options);
-                    
                     if (!response.ok) {
-                        throw new Error(`GHL API Error: ${response.status} ${response.statusText}`);
+                        const error = await response.json().catch(() => ({ message: 'Request failed' }));
+                        throw new Error(error.message || `Request failed: ${response.status}`);
                     }
 
                     return await response.json();
                 } catch (error) {
-                    console.error('GHL API Request Failed:', error);
+                    console.error('API call failed:', error);
                     throw error;
                 }
             }
 
-            async findContactByEmail(email) {
+            // Enhanced login with device fingerprinting
+            async login(email, password) {
                 try {
-                    const response = await this.makeRequest(
-                        `/contacts/search?locationId=${this.locationId}&query=${encodeURIComponent(email)}`
-                    );
-                    
-                    const contacts = response.contacts || [];
-                    return contacts.find(contact => 
-                        contact.email && contact.email.toLowerCase() === email.toLowerCase()
-                    );
-                } catch (error) {
-                    console.error('Error finding contact:', error);
-                    return null;
-                }
-            }
-
-            async authenticateUser(email, password) {
-                try {
-                    // Find contact by email
-                    const contact = await this.findContactByEmail(email);
-                    
-                    if (!contact) {
-                        throw new Error('Email not found in our system');
-                    }
-
-                    // Check if contact has password field (custom field in GHL)
-                    const storedPassword = contact.customFields?.find(
-                        field => field.name === 'password' || field.id === 'password'
-                    )?.value;
-
-                    if (!storedPassword) {
-                        throw new Error('Account not set up for app access');
-                    }
-
-                    // Simple password comparison (in production, use proper hashing)
-                    if (storedPassword !== password) {
-                        throw new Error('Invalid password');
-                    }
-
-                    return contact;
-                } catch (error) {
-                    console.error('Authentication failed:', error);
-                    throw error;
-                }
-            }
-
-            async getContactTags(contactId) {
-                try {
-                    const response = await this.makeRequest(`/contacts/${contactId}`);
-                    return response.contact?.tags || [];
-                } catch (error) {
-                    console.error('Error getting contact tags:', error);
-                    return [];
-                }
-            }
-
-            async addTagToContact(contactId, tag) {
-                try {
-                    return await this.makeRequest(`/contacts/${contactId}/tags`, 'POST', {
-                        tags: [tag]
+                    // Include device fingerprint in login request
+                    const deviceInfo = securityManager.getDeviceInfo();
+                    const response = await this.apiCall('/login', 'POST', { 
+                        email, 
+                        password,
+                        deviceFingerprint: deviceInfo.fingerprint,
+                        sessionToken: deviceInfo.sessionToken
                     });
-                } catch (error) {
-                    console.error('Error adding tag:', error);
-                    throw error;
-                }
-            }
+                    
+                    if (response.token) {
+                        this.setStoredToken(response.token);
+                    }
 
-            async removeTagFromContact(contactId, tag) {
-                try {
-                    return await this.makeRequest(`/contacts/${contactId}/tags/${tag}`, 'DELETE');
-                } catch (error) {
-                    console.error('Error removing tag:', error);
-                    throw error;
-                }
-            }
-
-            async updateContactActivity(contactId, activity) {
-                try {
-                    const note = {
-                        body: `NSPIRE App Activity: ${activity}`,
-                        userId: contactId
+                    // Store session data with device binding
+                    currentSession = {
+                        active: response.active,
+                        plan: response.plan,
+                        trialEndsAt: response.trialEndsAt,
+                        userId: response.userId,
+                        deviceFingerprint: deviceInfo.fingerprint,
+                        sessionToken: deviceInfo.sessionToken
                     };
                     
-                    return await this.makeRequest(`/contacts/${contactId}/notes`, 'POST', note);
+                    lastVerifiedAt = new Date();
+                    this.cacheSessionData();
+                    
+                    return response;
                 } catch (error) {
-                    console.error('Error updating activity:', error);
+                    throw error;
                 }
             }
-        }
 
-        // Initialize GHL API
-        const ghlApi = new GHLApi();
-
-        // ============================================
-        // SUBSCRIPTION MANAGEMENT
-        // ============================================
-
-        class SubscriptionManager {
-            constructor() {
-                this.storageKey = 'nspire_subscription_cache';
-            }
-
-            async checkSubscriptionStatus(contact) {
+            // Check membership status
+            async checkMembershipStatus(forceRefresh = false) {
                 try {
-                    const tags = await ghlApi.getContactTags(contact.id);
-                    const subscription = this.parseSubscriptionFromTags(tags, contact);
-                    
-                    // Cache subscription data
-                    this.cacheSubscription(subscription);
-                    
-                    return subscription;
-                } catch (error) {
-                    console.error('Error checking subscription:', error);
-                    // Return cached data if API fails
-                    return this.getCachedSubscription();
-                }
-            }
-
-            parseSubscriptionFromTags(tags, contact) {
-                const tagNames = tags.map(tag => tag.name || tag);
-                
-                const subscription = {
-                    contactId: contact.id,
-                    email: contact.email,
-                    status: 'inactive',
-                    tier: null,
-                    expiresAt: null,
-                    inGracePeriod: false,
-                    tags: tagNames,
-                    lastChecked: new Date().toISOString()
-                };
-
-                // Check subscription status
-                if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.paid)) {
-                    subscription.status = 'active';
-                    
-                    // Determine tier
-                    if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.legacy)) {
-                        subscription.tier = 'legacy';
-                    } else if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.standard)) {
-                        subscription.tier = 'standard';
+                    // Use cached data if recent enough and not forcing refresh
+                    if (!forceRefresh && this.isCacheValid()) {
+                        return this.getCachedMembership();
                     }
-                } else if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.trial)) {
-                    subscription.status = 'trial';
-                    // Calculate trial expiration (14 days from creation)
-                    const createdDate = new Date(contact.dateAdded || contact.createdAt);
-                    const trialEnd = new Date(createdDate.getTime() + (SUBSCRIPTION_CONFIG.trialDays * 24 * 60 * 60 * 1000));
-                    subscription.expiresAt = trialEnd.toISOString();
+
+                    const response = await this.apiCall('/membership/status');
                     
-                    // Check if trial expired
-                    if (new Date() > trialEnd) {
-                        subscription.status = 'expired';
-                        this.checkGracePeriod(subscription, contact);
-                    }
-                } else if (tagNames.includes(SUBSCRIPTION_CONFIG.tags.cancelled)) {
-                    subscription.status = 'cancelled';
-                    this.checkGracePeriod(subscription, contact);
-                }
-
-                return subscription;
-            }
-
-            checkGracePeriod(subscription, contact) {
-                // Check if within 7-day grace period
-                const lastPaymentDate = new Date(contact.lastActivityAt || contact.dateAdded);
-                const gracePeriodEnd = new Date(lastPaymentDate.getTime() + (SUBSCRIPTION_CONFIG.gracePeriodDays * 24 * 60 * 60 * 1000));
-                
-                if (new Date() <= gracePeriodEnd) {
-                    subscription.inGracePeriod = true;
-                    subscription.gracePeriodEnds = gracePeriodEnd.toISOString();
-                }
-            }
-
-            cacheSubscription(subscription) {
-                try {
-                    localStorage.setItem(this.storageKey, JSON.stringify(subscription));
-                    lastSyncTime = new Date().toISOString();
+                    // Update session
+                    currentSession = {
+                        active: response.active,
+                        plan: response.plan,
+                        trialEndsAt: response.trialEndsAt,
+                        userId: currentSession?.userId
+                    };
+                    
+                    graceMode = response.graceMode || false;
+                    lastVerifiedAt = new Date();
+                    this.cacheSessionData();
+                    
+                    return response;
                 } catch (error) {
-                    console.error('Error caching subscription:', error);
+                    // Handle offline scenario
+                    return this.handleOfflineVerification(error);
                 }
             }
 
-            getCachedSubscription() {
+            // Handle verification when offline
+            handleOfflineVerification(error) {
+                const cached = this.getCachedMembership();
+                
+                if (cached && this.isWithinGracePeriod()) {
+                    graceMode = true;
+                    return {
+                        active: true,
+                        plan: cached.plan,
+                        trialEndsAt: cached.trialEndsAt,
+                        graceMode: true
+                    };
+                }
+                
+                throw new Error('verification_failed');
+            }
+
+            // Cache management
+            cacheSessionData() {
+                if (currentSession) {
+                    localStorage.setItem(STORAGE_KEYS.membership, JSON.stringify(currentSession));
+                    localStorage.setItem(STORAGE_KEYS.lastVerified, lastVerifiedAt.toISOString());
+                }
+            }
+
+            getCachedMembership() {
                 try {
-                    const cached = localStorage.getItem(this.storageKey);
+                    const cached = localStorage.getItem(STORAGE_KEYS.membership);
                     return cached ? JSON.parse(cached) : null;
                 } catch (error) {
-                    console.error('Error reading cached subscription:', error);
                     return null;
                 }
             }
 
-            clearCache() {
-                localStorage.removeItem(this.storageKey);
-                lastSyncTime = null;
-            }
-
-            isAccessAllowed(subscription) {
-                if (!subscription) return false;
-
-                switch (subscription.status) {
-                    case 'active':
-                        return true;
-                    case 'trial':
-                        return new Date() <= new Date(subscription.expiresAt);
-                    case 'expired':
-                    case 'cancelled':
-                        return subscription.inGracePeriod;
-                    default:
+            isCacheValid(maxAgeMinutes = 60) {
+                if (!lastVerifiedAt) {
+                    const stored = localStorage.getItem(STORAGE_KEYS.lastVerified);
+                    if (stored) {
+                        lastVerifiedAt = new Date(stored);
+                    } else {
                         return false;
+                    }
                 }
+                
+                const ageMinutes = (new Date() - lastVerifiedAt) / (1000 * 60);
+                return ageMinutes <= maxAgeMinutes;
             }
 
-            getAccessMessage(subscription) {
-                if (!subscription) {
-                    return 'Please log in to access the NSPIRE Training App';
-                }
+            isWithinGracePeriod() {
+                if (!lastVerifiedAt) return false;
+                
+                const ageHours = (new Date() - lastVerifiedAt) / (1000 * 60 * 60);
+                return ageHours <= APP_CONFIG.graceTtlHours;
+            }
 
-                switch (subscription.status) {
-                    case 'active':
-                        return `Welcome back! Your ${subscription.tier} subscription is active.`;
-                    case 'trial':
-                        const daysLeft = Math.ceil((new Date(subscription.expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
-                        return `Trial active - ${daysLeft} days remaining`;
-                    case 'expired':
-                        if (subscription.inGracePeriod) {
-                            const graceLeft = Math.ceil((new Date(subscription.gracePeriodEnds) - new Date()) / (1000 * 60 * 60 * 24));
-                            return `Subscription expired - ${graceLeft} grace period days remaining`;
-                        }
-                        return 'Subscription expired. Please renew to continue access.';
-                    case 'cancelled':
-                        if (subscription.inGracePeriod) {
-                            return 'Subscription cancelled - limited access during grace period';
-                        }
-                        return 'Subscription cancelled. Please reactivate to continue access.';
-                    default:
-                        return 'No active subscription found';
-                }
+            // Clear session data
+            clearSession() {
+                this.setStoredToken(null);
+                currentSession = null;
+                lastVerifiedAt = null;
+                graceMode = false;
+                localStorage.removeItem(STORAGE_KEYS.membership);
+                localStorage.removeItem(STORAGE_KEYS.lastVerified);
+            }
+
+            // Check if user has valid session
+            hasValidSession() {
+                return !!(this.sessionToken && currentSession);
             }
         }
 
-        // Initialize Subscription Manager
-        const subscriptionManager = new SubscriptionManager();
+        // Initialize auth service
+        const authService = new AuthService();
+
+        // ============================================
+        // UI COMPONENTS & MODALS
+        // ============================================
+
+        class UIManager {
+            // Show membership renewal modal
+            static showRenewalModal(reason = 'inactive', renewUrl = null) {
+                const modal = document.createElement('div');
+                modal.id = 'renewal-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    padding: 16px;
+                `;
+
+                const titles = {
+                    inactive: 'Your membership needs a quick renewal',
+                    pastdue: 'Update payment method to continue',
+                    expired: 'Membership expired'
+                };
+
+                const messages = {
+                    inactive: 'We couldn\'t verify an active subscription for this account. Renew now to keep full access to NSPIRE standards and tools.',
+                    pastdue: 'We couldn\'t process your last payment. Update your card to restore full access.',
+                    expired: 'Your subscription has expired. Renew to continue accessing NSPIRE training materials.'
+                };
+
+                // Store renewal URL globally for button actions
+                window.nspireRenewalUrl = renewUrl;
+
+                modal.innerHTML = `
+                    <div style="
+                        background: white;
+                        border-radius: 12px;
+                        padding: 24px;
+                        max-width: 400px;
+                        width: 100%;
+                        text-align: center;
+                        box-shadow: 0 20px 25px rgba(0,0,0,0.3);
+                    ">
+                        <h2 style="
+                            font-family: var(--font-family-headings);
+                            color: var(--neutral-900);
+                            margin-bottom: 16px;
+                            font-size: 20px;
+                        ">${titles[reason] || titles.inactive}</h2>
+                        
+                        <p style="
+                            color: var(--neutral-700);
+                            margin-bottom: 24px;
+                            line-height: 1.5;
+                        ">${messages[reason] || messages.inactive}</p>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <button onclick="UIManager.openRenewalUrl()" style="
+                                background: var(--primary-color);
+                                color: white;
+                                border: none;
+                                padding: 12px 24px;
+                                border-radius: 8px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                font-size: 16px;
+                            ">
+                                ${reason === 'pastdue' ? 'Update Payment Method' : 'Renew Membership'}
+                            </button>
+                            
+                            <button onclick="UIManager.contactSupport()" style="
+                                background: transparent;
+                                color: var(--neutral-600);
+                                border: 1px solid var(--neutral-300);
+                                padding: 10px 24px;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-size: 14px;
+                            ">
+                                Contact Support
+                            </button>
+                            
+                            <button onclick="UIManager.tryAgain()" style="
+                                background: transparent;
+                                color: var(--secondary-color);
+                                border: none;
+                                padding: 8px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                text-decoration: underline;
+                            ">
+                                Try Again
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+            }
+
+            // Show grace mode banner
+            static showGraceBanner() {
+                // Remove existing banner
+                const existing = document.getElementById('grace-banner');
+                if (existing) existing.remove();
+
+                const banner = document.createElement('div');
+                banner.id = 'grace-banner';
+                banner.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    background: #f59e0b;
+                    color: white;
+                    padding: 12px;
+                    text-align: center;
+                    font-size: 14px;
+                    z-index: 9999;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                `;
+
+                banner.innerHTML = `
+                    <span>Temporary offline access enabled. We'll re-check your membership when you're online.</span>
+                    <button onclick="UIManager.tryRecheck()" style="
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                        border: none;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        margin-left: 12px;
+                        cursor: pointer;
+                        font-size: 12px;
+                    ">Try Now</button>
+                `;
+
+                document.body.appendChild(banner);
+            }
+
+            // Show offline connection required modal
+            static showOfflineModal() {
+                const modal = document.createElement('div');
+                modal.id = 'offline-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    padding: 16px;
+                `;
+
+                modal.innerHTML = `
+                    <div style="
+                        background: white;
+                        border-radius: 12px;
+                        padding: 24px;
+                        max-width: 350px;
+                        width: 100%;
+                        text-align: center;
+                    ">
+                        <h2 style="
+                            color: var(--neutral-900);
+                            margin-bottom: 16px;
+                            font-size: 18px;
+                        ">Connection Required</h2>
+                        
+                        <p style="
+                            color: var(--neutral-700);
+                            margin-bottom: 20px;
+                            line-height: 1.5;
+                        ">Connect to the internet to verify your membership.</p>
+                        
+                        <button onclick="UIManager.tryRecheck()" style="
+                            background: var(--primary-color);
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            width: 100%;
+                        ">Try Again</button>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+            }
+
+            // Action handlers
+            static openRenewalUrl() {
+                const renewUrl = window.nspireRenewalUrl || APP_CONFIG.renewUrl || 'https://your-renewal-portal.com';
+                window.open(renewUrl, '_blank');
+            }
+
+            static contactSupport() {
+                const supportEmail = APP_CONFIG.supportEmail || 'support@nspiretrainingapp.com';
+                window.open(`mailto:${supportEmail}`, '_blank');
+            }
+
+            static async tryAgain() {
+                UIManager.hideModals();
+                await handleLoginRetry();
+            }
+
+            static async tryRecheck() {
+                UIManager.hideModals();
+                await checkMembershipAndNavigate();
+            }
+
+            static hideModals() {
+                ['renewal-modal', 'offline-modal', 'grace-banner'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.remove();
+                });
+            }
+        }
 
         // ============================================
         // ENHANCED LOGIN SYSTEM
@@ -1221,10 +1754,9 @@
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const loginButton = document.querySelector('.btn');
-            const errorDiv = document.getElementById('login-error');
 
             // Clear previous errors
-            if (errorDiv) errorDiv.remove();
+            clearLoginError();
 
             // Validation
             if (!email || !password) {
@@ -1232,74 +1764,43 @@
                 return;
             }
 
-            // Check if GHL is configured
-            if (!ghlApi.configured) {
-                // Demo mode for testing
-                if (email === 'demo@nspire.app' && password === 'demo123') {
-                    const demoUser = {
-                        id: 'demo_user_123',
-                        email: 'demo@nspire.app',
-                        firstName: 'Demo',
-                        lastName: 'User',
-                        dateAdded: new Date().toISOString()
-                    };
-                    
-                    const demoSubscription = {
-                        contactId: 'demo_user_123',
-                        email: 'demo@nspire.app',
-                        status: 'active',
-                        tier: 'standard',
-                        expiresAt: null,
-                        inGracePeriod: false,
-                        tags: ['paid_subscriber', 'standard_59'],
-                        lastChecked: new Date().toISOString()
-                    };
-                    
-                    currentUser = demoUser;
-                    userSubscription = demoSubscription;
-                    
-                    showAppContent(demoSubscription);
-                    return;
-                } else {
-                    showLoginError('Demo mode: Use demo@nspire.app / demo123 or configure GoHighLevel API');
-                    return;
-                }
-            }
-
             // Show loading state
             loginButton.textContent = 'Authenticating...';
             loginButton.disabled = true;
 
             try {
-                // Authenticate with GHL
-                const contact = await ghlApi.authenticateUser(email, password);
-                
-                if (!contact) {
-                    throw new Error('Authentication failed');
+                // Demo mode check
+                if (email === 'demo@nspire.app' && password === 'demo123') {
+                    await handleDemoLogin();
+                    return;
                 }
 
-                // Check subscription status
-                const subscription = await subscriptionManager.checkSubscriptionStatus(contact);
+                // Authenticate with backend
+                const response = await authService.login(email, password);
                 
-                // Store user session
-                currentUser = contact;
-                userSubscription = subscription;
-                
-                // Update activity log
-                await ghlApi.updateContactActivity(contact.id, 'App Login');
-
-                // Check access permissions
-                if (subscriptionManager.isAccessAllowed(subscription)) {
-                    // Success - show app
-                    showAppContent(subscription);
+                if (response.active) {
+                    // Success - navigate to app
+                    showAppContent();
                 } else {
-                    // No access - show subscription message
-                    showSubscriptionRequired(subscription);
+                    // Show renewal modal with URL from backend
+                    UIManager.showRenewalModal('inactive', response.renewUrl);
                 }
 
             } catch (error) {
                 console.error('Login failed:', error);
-                showLoginError(error.message || 'Login failed. Please try again.');
+                
+                if (error.message === 'verification_failed') {
+                    // Check for offline access
+                    if (authService.isWithinGracePeriod()) {
+                        graceMode = true;
+                        showAppContent();
+                        UIManager.showGraceBanner();
+                    } else {
+                        UIManager.showOfflineModal();
+                    }
+                } else {
+                    showLoginError(error.message || 'Login failed. Please check your credentials and try again.');
+                }
             } finally {
                 // Reset button
                 loginButton.textContent = 'Login';
@@ -1307,7 +1808,45 @@
             }
         }
 
+        async function handleDemoLogin() {
+            // Demo mode - simulate successful login
+            currentSession = {
+                active: true,
+                plan: 'demo',
+                trialEndsAt: null,
+                userId: 'demo_user'
+            };
+            
+            lastVerifiedAt = new Date();
+            graceMode = false;
+            
+            showAppContent();
+            showDemoMessage();
+        }
+
+        async function handleLoginRetry() {
+            try {
+                if (currentSession) {
+                    const response = await authService.checkMembershipStatus(true);
+                    
+                    if (response.active) {
+                        showAppContent();
+                        if (response.graceMode) {
+                            UIManager.showGraceBanner();
+                        }
+                    } else {
+                        UIManager.showRenewalModal('inactive');
+                    }
+                }
+            } catch (error) {
+                console.error('Retry failed:', error);
+                UIManager.showOfflineModal();
+            }
+        }
+
         function showLoginError(message) {
+            clearLoginError();
+            
             const errorDiv = document.createElement('div');
             errorDiv.id = 'login-error';
             errorDiv.style.cssText = `
@@ -1324,54 +1863,16 @@
             
             const loginForm = document.querySelector('.login-form');
             loginForm.insertBefore(errorDiv, loginForm.firstChild);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (errorDiv.parentElement) {
-                    errorDiv.remove();
-                }
-            }, 5000);
         }
 
-        function showAppContent(subscription) {
-            // Show logout button
-            const logoutButton = document.getElementById('logoutButton');
-            if (logoutButton) {
-                logoutButton.style.display = 'block';
-            }
-            
-            // Show subscription status
-            showSubscriptionStatus(subscription);
-            
-            // Navigate to search page
-            showSearchPage();
-            
-            // Track app usage
-            trackAppUsage('app_accessed');
+        function clearLoginError() {
+            const errorDiv = document.getElementById('login-error');
+            if (errorDiv) errorDiv.remove();
         }
 
-        function showSubscriptionRequired(subscription) {
-            const message = subscriptionManager.getAccessMessage(subscription);
-            
-            const subscriptionDiv = document.createElement('div');
-            subscriptionDiv.innerHTML = `
-                <div style="text-align: center; padding: 24px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin: 16px 0;">
-                    <h3 style="color: #92400e; margin-bottom: 12px;">Subscription Required</h3>
-                    <p style="color: #78350f; margin-bottom: 16px;">${message}</p>
-                    <button onclick="showSubscriptionOptions()" class="btn" style="width: auto; padding: 8px 16px;">
-                        View Subscription Options
-                    </button>
-                </div>
-            `;
-            
-            const loginForm = document.querySelector('.login-form');
-            loginForm.appendChild(subscriptionDiv);
-        }
-
-        function showSubscriptionStatus(subscription) {
-            const statusDiv = document.createElement('div');
-            statusDiv.id = 'subscription-status';
-            statusDiv.style.cssText = `
+        function showDemoMessage() {
+            const demoDiv = document.createElement('div');
+            demoDiv.style.cssText = `
                 position: fixed;
                 top: 10px;
                 right: 10px;
@@ -1383,118 +1884,95 @@
                 z-index: 1000;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             `;
+            demoDiv.textContent = 'Demo Mode - Full Access';
+            document.body.appendChild(demoDiv);
             
-            const message = subscriptionManager.getAccessMessage(subscription);
-            statusDiv.textContent = message;
-            
-            // Color based on status
-            switch (subscription.status) {
-                case 'active':
-                    statusDiv.style.background = '#10b981'; // green
-                    break;
-                case 'trial':
-                    statusDiv.style.background = '#f59e0b'; // yellow
-                    break;
-                case 'expired':
-                case 'cancelled':
-                    statusDiv.style.background = subscription.inGracePeriod ? '#f59e0b' : '#ef4444'; // yellow or red
-                    break;
-            }
-            
-            document.body.appendChild(statusDiv);
-            
-            // Auto-hide after 10 seconds
             setTimeout(() => {
-                if (statusDiv.parentElement) {
-                    statusDiv.remove();
+                if (demoDiv.parentElement) {
+                    demoDiv.remove();
                 }
-            }, 10000);
+            }, 5000);
         }
 
-        function showSubscriptionOptions() {
-            alert(`NSPIRE Training App Subscription Options:
-
-Legacy Plan: $39.99/year (Limited to first 5,000 users)
-Standard Plan: $59.99/year
-
-14-day trial available for $1
-
-Contact support for subscription assistance.`);
-        }
-
-        // ============================================
-        // OFFLINE SUPPORT & SYNC
-        // ============================================
-
-        function initializeOfflineSupport() {
-            // Check if online
-            function updateOnlineStatus() {
-                offlineMode = !navigator.onLine;
-                
-                if (offlineMode) {
-                    showOfflineIndicator();
-                } else {
-                    hideOfflineIndicator();
-                    // Sync when back online
-                    syncWhenOnline();
-                }
+        function showAppContent() {
+            // Show logout button
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.style.display = 'block';
             }
-
-            window.addEventListener('online', updateOnlineStatus);
-            window.addEventListener('offline', updateOnlineStatus);
             
-            // Initial check
-            updateOnlineStatus();
+            // Navigate to search page
+            showSearchPage();
         }
 
-        function showOfflineIndicator() {
-            let indicator = document.getElementById('offline-indicator');
-            if (!indicator) {
-                indicator = document.createElement('div');
-                indicator.id = 'offline-indicator';
-                indicator.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    background: #ef4444;
-                    color: white;
-                    text-align: center;
-                    padding: 8px;
-                    font-size: 14px;
-                    z-index: 9999;
-                `;
-                indicator.textContent = 'Offline Mode - Using cached data';
-                document.body.insertBefore(indicator, document.body.firstChild);
-            }
-        }
+        // ============================================
+        // MEMBERSHIP VERIFICATION & NAVIGATION
+        // ============================================
 
-        function hideOfflineIndicator() {
-            const indicator = document.getElementById('offline-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
-        }
-
-        async function syncWhenOnline() {
-            if (!currentUser || offlineMode) return;
-
+        async function checkMembershipAndNavigate() {
             try {
-                // Re-verify subscription status
-                const subscription = await subscriptionManager.checkSubscriptionStatus(currentUser);
-                userSubscription = subscription;
+                const response = await authService.checkMembershipStatus(true);
                 
-                // Check if access still allowed
-                if (!subscriptionManager.isAccessAllowed(subscription)) {
-                    // Access revoked - show warning and logout
-                    alert('Your subscription status has changed. Please log in again.');
-                    handleLogout();
+                if (response.active) {
+                    if (response.graceMode) {
+                        UIManager.showGraceBanner();
+                    }
+                    return true;
+                } else {
+                    UIManager.showRenewalModal('inactive');
+                    return false;
                 }
-                
-                console.log('✓ Subscription status synced');
             } catch (error) {
-                console.error('Sync failed:', error);
+                console.error('Membership check failed:', error);
+                
+                if (authService.isWithinGracePeriod()) {
+                    UIManager.showGraceBanner();
+                    graceMode = true;
+                    return true;
+                } else {
+                    UIManager.showOfflineModal();
+                    return false;
+                }
             }
+        }
+
+        // Background verification (called on app resume)
+        async function backgroundMembershipCheck() {
+            if (!authService.hasValidSession()) return;
+            
+            // Only check if last verification was > 60 minutes ago
+            if (authService.isCacheValid(60)) return;
+            
+            try {
+                const response = await authService.checkMembershipStatus();
+                
+                if (!response.active && !response.graceMode) {
+                    // Membership became inactive - show modal on next navigation
+                    setTimeout(() => {
+                        UIManager.showRenewalModal('inactive');
+                    }, 1000);
+                }
+            } catch (error) {
+                console.log('Background check failed (offline?):', error);
+            }
+        }
+
+        // Protected route navigation
+        async function navigateProtected(routeFunction, maxCacheHours = 6) {
+            if (!authService.hasValidSession()) {
+                showPage('loginPage');
+                return false;
+            }
+            
+            // Check if verification is needed (> 6 hours old)
+            if (!authService.isCacheValid(maxCacheHours * 60)) {
+                const isValid = await checkMembershipAndNavigate();
+                if (!isValid) return false;
+            }
+            
+            // Execute the route function
+            routeFunction();
+            return true;
         }
 
         // ============================================
@@ -1584,23 +2062,136 @@ Contact support for subscription assistance.`);
         }
 
         // ============================================
-        // USAGE TRACKING
+        // MEMBERSHIP VERIFICATION & NAVIGATION
         // ============================================
 
-        async function trackAppUsage(action, details = '') {
-            if (!currentUser || offlineMode) return;
-
+        async function checkMembershipAndNavigate() {
             try {
-                const activity = `${action}${details ? ': ' + details : ''}`;
-                await ghlApi.updateContactActivity(currentUser.id, activity);
+                const response = await authService.checkMembershipStatus(true);
+                
+                if (response.active) {
+                    if (response.graceMode) {
+                        UIManager.showGraceBanner();
+                    }
+                    return true;
+                } else {
+                    UIManager.showRenewalModal('inactive');
+                    return false;
+                }
             } catch (error) {
-                console.error('Failed to track usage:', error);
+                console.error('Membership check failed:', error);
+                
+                if (authService.isWithinGracePeriod()) {
+                    UIManager.showGraceBanner();
+                    graceMode = true;
+                    return true;
+                } else {
+                    UIManager.showOfflineModal();
+                    return false;
+                }
             }
         }
 
-        // Track page views
-        function trackPageView(pageName) {
-            trackAppUsage('page_view', pageName);
+        // Background verification (called on app resume)
+        async function backgroundMembershipCheck() {
+            if (!authService.hasValidSession()) return;
+            
+            // Only check if last verification was > 60 minutes ago
+            if (authService.isCacheValid(60)) return;
+            
+            try {
+                const response = await authService.checkMembershipStatus();
+                
+                if (!response.active && !response.graceMode) {
+                    // Membership became inactive - show modal on next navigation
+                    setTimeout(() => {
+                        UIManager.showRenewalModal('inactive');
+                    }, 1000);
+                }
+            } catch (error) {
+                console.log('Background check failed (offline?):', error);
+            }
+        }
+
+        // Protected route navigation
+        async function navigateProtected(routeFunction, maxCacheHours = 6) {
+            if (!authService.hasValidSession()) {
+                showPage('loginPage');
+                return false;
+            }
+            
+            // Check if verification is needed (> 6 hours old)
+            if (!authService.isCacheValid(maxCacheHours * 60)) {
+                const isValid = await checkMembershipAndNavigate();
+                if (!isValid) return false;
+            }
+            
+            // Execute the route function
+            routeFunction();
+            return true;
+        }
+
+        // ============================================
+        // SESSION MANAGEMENT
+        // ============================================
+
+        function initializeSession() {
+            // Check for existing valid session
+            if (authService.hasValidSession()) {
+                // Load cached session data
+                currentSession = authService.getCachedMembership();
+                
+                if (currentSession && authService.isWithinGracePeriod()) {
+                    // Valid session - show app
+                    showAppContent();
+                    
+                    // Check membership in background if cache is old
+                    if (!authService.isCacheValid(60)) {
+                        backgroundMembershipCheck();
+                    }
+                    
+                    return;
+                }
+            }
+            
+            // No valid session - show login
+            showPage('loginPage');
+        }
+
+        function handleLogout() {
+            // Clear all session data
+            authService.clearSession();
+            currentSession = null;
+            lastVerifiedAt = null;
+            graceMode = false;
+            
+            // Hide UI elements
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.style.display = 'none';
+            }
+            
+            // Clear any modals/banners
+            UIManager.hideModals();
+            
+            // Return to login
+            showPage('loginPage');
+        }
+
+        // App resume/visibility handling
+        function initializeAppStateHandling() {
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && authService.hasValidSession()) {
+                    // App resumed - check membership if needed
+                    backgroundMembershipCheck();
+                }
+            });
+            
+            window.addEventListener('focus', () => {
+                if (authService.hasValidSession()) {
+                    backgroundMembershipCheck();
+                }
+            });
         }
 
         // ============================================
@@ -1666,35 +2257,12 @@ Contact support for subscription assistance.`);
             
             console.log(`✓ Processed ${processed} image assignments`);
             
-            // Add visible success message
-            const debugDiv = document.createElement('div');
-            debugDiv.id = 'debug-info';
-            debugDiv.style.cssText = 'position:fixed; top:10px; right:10px; background:green; color:white; border:1px solid #ccc; padding:10px; z-index:9999; max-width:300px; font-size:12px;';
-            debugDiv.innerHTML = `
-                <strong>✓ Images Loaded!</strong><br>
-                Found ${processed} assigned images<br>
-                <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
-            `;
-            document.body.appendChild(debugDiv);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (debugDiv.parentElement) {
-                    debugDiv.remove();
-                }
-            }, 5000);
+            // Images loaded successfully (notification removed for cleaner UX)
         }
 
         function showNoDataMessage() {
-            const debugDiv = document.createElement('div');
-            debugDiv.id = 'debug-info';
-            debugDiv.style.cssText = 'position:fixed; top:10px; right:10px; background:red; color:white; border:1px solid #ccc; padding:10px; z-index:9999; max-width:300px; font-size:12px;';
-            debugDiv.innerHTML = `
-                <strong>❌ No Image Data</strong><br>
-                No assignments found in file or localStorage<br>
-                <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
-            `;
-            document.body.appendChild(debugDiv);
+            // No data message removed for cleaner UX
+            console.log('No image assignments found');
         }
 
         // Load data from standards file when the page loads (no-cache + cache-bust)
@@ -1753,16 +2321,7 @@ Contact support for subscription assistance.`);
                     console.log('✓ Loaded severity location weights:', severityLocationWeights);
                     window.__weightsLoaded = true;
                     
-                    // Show success message to user
-                    const debugDiv = document.createElement('div');
-                    debugDiv.style.cssText = 'position:fixed; top:60px; right:10px; background:blue; color:white; border:1px solid #ccc; padding:10px; z-index:9999; max-width:300px; font-size:12px;';
-                    debugDiv.innerHTML = `
-                        <strong>✓ Calculator Ready!</strong><br>
-                        Severity location weights loaded<br>
-                        <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
-                    `;
-                    document.body.appendChild(debugDiv);
-                    setTimeout(() => debugDiv.remove(), 5000);
+                    // Calculator ready (notification removed for cleaner UX)
                 } else {
                     console.error('❌ Failed to load severity location weights:', severityLocationResponse.status);
                 }
@@ -1859,7 +2418,7 @@ Contact support for subscription assistance.`);
         }
 
         function handleLogin(event) {
-            // Redirect to GHL authentication
+            // Redirect to new GHL authentication
             return handleGHLLogin(event);
         }
 
@@ -1870,7 +2429,6 @@ Contact support for subscription assistance.`);
         function showSearchPage() {
             showPage('searchPage');
             displayStandards();
-            trackPageView('search');
         }
 
         function showDetailsPage(standardIndex) {
@@ -1878,7 +2436,6 @@ Contact support for subscription assistance.`);
             currentStandard.index = standardIndex;
             showPage('detailsPage');
             displayDeficiencyDetails();
-            trackPageView(`details_${currentStandard.title || currentStandard.id}`);
         }
 
         function displayStandards() {
@@ -2231,42 +2788,72 @@ Contact support for subscription assistance.`);
             return html;
         }
 
+        function closeImageModal(event) {
+            if (!event || event.target === event.currentTarget || event.target.classList.contains('modal-close')) {
+                document.getElementById('imageModal').classList.remove('active');
+                // Remove modal state from history if it exists
+                if (window.modalStateAdded) {
+                    window.modalStateAdded = false;
+                }
+            }
+        }
+
+        // Initialize browser history management for modals (optional fallback)
+        function initializeHistoryManagement() {
+            // Handle browser back button when modal is open (fallback behavior)
+            window.addEventListener('popstate', function(event) {
+                const modal = document.getElementById('imageModal');
+                if (modal && modal.classList.contains('active')) {
+                    // Close modal if user uses phone back button
+                    modal.classList.remove('active');
+                    window.modalStateAdded = false;
+                    // Prevent default back behavior
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+        }
+
+        // Enhanced showImage function with history management
         function showImage(imageKey) {
             const modal = document.getElementById('imageModal');
-            const modalImg = document.getElementById('modalImage');
+            const modalImage = document.getElementById('modalImage');
             
             // Check if this is an assigned image
             const assignment = imageAssignments.get(imageKey);
             
             if (assignment && assignment.outputPath) {
                 // Use the image source directly (supports both file paths and base64 data URLs)
-                modalImg.src = assignment.outputPath;
-                modalImg.onerror = function() {
+                modalImage.src = assignment.outputPath;
+                modalImage.onerror = function() {
                     this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="20"%3EAssigned Image Not Found%3C/text%3E%3C/svg%3E';
                 };
             } else {
                 // Try legacy path format for backward compatibility
                 const imagePath = `images/${imageKey}.jpg`;
-                modalImg.src = imagePath;
-                modalImg.onerror = function() {
+                modalImage.src = imagePath;
+                modalImage.onerror = function() {
                     this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="20"%3EImage Not Available%3C/text%3E%3C/svg%3E';
                 };
             }
             
             modal.classList.add('active');
-        }
-
-        function closeImageModal(event) {
-            if (!event || event.target === event.currentTarget) {
-                document.getElementById('imageModal').classList.remove('active');
+            
+            // Optional: Add history state for back button fallback (less intrusive now)
+            if (!window.modalStateAdded) {
+                history.pushState({modal: 'open'}, '', '');
+                window.modalStateAdded = true;
             }
         }
 
         // Initialize the app
         window.onload = function() {
-            // Initialize GHL systems first
+            // Initialize authentication and session management
             initializeSession();
-            initializeOfflineSupport();
+            initializeAppStateHandling();
+            
+            // Initialize browser history management for image modal
+            initializeHistoryManagement();
             
             // Load weights and sampling data first
             loadWeightsAndSampling();
@@ -2316,11 +2903,6 @@ Contact support for subscription assistance.`);
                     }
                     initialNote.textContent = `Sample size: ${sampleInit}`;
                 }
-            }
-
-            // Save user session on app state changes
-            if (currentUser) {
-                saveUserSession();
             }
 
             // PWA Installation Logic
@@ -2426,7 +3008,37 @@ Contact support for subscription assistance.`);
                 installBanner.classList.remove('show');
                 localStorage.setItem('pwa-installed', 'true');
             });
+            
+            // Start continuous security monitoring
+            startSecurityMonitoring();
         };
+        
+        // Offline-first security monitoring
+        function startSecurityMonitoring() {
+            // Local session validation every 5 minutes
+            setInterval(async () => {
+                const isValid = await securityManager.validateSession();
+                if (!isValid) {
+                    console.warn('Local session expired');
+                    // Don't kick user out, just log warning
+                }
+            }, 5 * 60 * 1000);
+            
+            // Monitor for suspicious activity (keep this)
+            let suspiciousActivity = 0;
+            let clickCount = 0;
+            document.addEventListener('click', () => {
+                clickCount++;
+                setTimeout(() => clickCount--, 1000);
+                if (clickCount > 20) {
+                    suspiciousActivity++;
+                    if (suspiciousActivity > 3) {
+                        console.warn('Suspicious automated activity detected');
+                        // Log only, don't block user
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
