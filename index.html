@@ -2169,25 +2169,28 @@ Contact support for subscription assistance.`);
         // License Management System
         class LicenseManager {
             static validateLicenseFormat(licenseKey) {
-                // Accept both old format (6-6-6) and new GHL format (4-4-4)
-                const oldPattern = /^NSPIRE-\d{4}-[A-Z0-9]{6}-[A-Z0-9]{6}-[A-Z0-9]{6}$/;
-                const newPattern = /^NSPIRE-\d{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+                // GHL Format: NSPIRE-2025-XXXXXX-XXXXXX-XXXXXX (6 characters per segment)
+                const ghlPattern = /^NSPIRE-2025-[A-Z0-9]{6}-[A-Z0-9]{6}-[A-Z0-9]{6}$/;
                 const upperKey = licenseKey.toUpperCase();
-                return oldPattern.test(upperKey) || newPattern.test(upperKey);
+                return ghlPattern.test(upperKey);
             }
             
             static parseLicenseKey(licenseKey) {
                 const parts = licenseKey.toUpperCase().split('-');
                 if (parts.length !== 5) return null;
                 
+                // GHL Format validation: NSPIRE-2025-SEGMENT1-SEGMENT2-SEGMENT3
+                if (parts[0] !== 'NSPIRE' || parts[1] !== '2025') return null;
+                if (parts[2].length !== 6 || parts[3].length !== 6 || parts[4].length !== 6) return null;
+                
                 return {
                     prefix: parts[0],
-                    year: parts[1],
+                    year: parts[1], 
                     segment1: parts[2],
                     segment2: parts[3],
                     segment3: parts[4],
                     full: licenseKey.toUpperCase(),
-                    format: parts[2].length === 6 ? 'legacy' : 'ghl' // Detect format type
+                    format: 'ghl'
                 };
             }
             
@@ -2236,13 +2239,20 @@ Contact support for subscription assistance.`);
             }
             
             static async validateWithServer(licenseKey, deviceFingerprint) {
-                // For demo purposes, we'll simulate server validation
-                // In production, this would be a real API call
+                // Validate license format first
+                if (!this.validateLicenseFormat(licenseKey)) {
+                    throw new Error('Invalid license key format. Must be NSPIRE-2025-XXXXXX-XXXXXX-XXXXXX');
+                }
+                
+                // Parse the license key
+                const parsedKey = this.parseLicenseKey(licenseKey);
                 
                 await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
                 
-                // Simplified validation logic - only trial or annual
-                if (licenseKey.includes('DEMO') || licenseKey.includes('TRIAL')) {
+                // GHL License Type Detection:
+                // Trial: segment1 contains "DEMO" (14 days, 1 device)
+                // Annual: All others including Single/Regional/Enterprise (365 days, 2 devices)
+                if (parsedKey.segment1.includes('DEMO')) {
                     return {
                         expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days
                         plan: 'trial',
@@ -2251,12 +2261,12 @@ Contact support for subscription assistance.`);
                     };
                 }
                 
-                // All other valid keys are annual licenses
+                // All other valid GHL keys (Single/Regional/Enterprise) are annual licenses
                 return {
                     expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
                     plan: 'annual',
                     deviceCount: 1,
-                    maxDevices: 2 // 2 devices for annual license
+                    maxDevices: 2 // 2 devices for annual license (Single gets 1 key, Regional gets 5, Enterprise gets 10)
                 };
             }
             
