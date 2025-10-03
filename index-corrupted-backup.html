@@ -9,24 +9,7 @@
     
     <!-- Native App Configuration -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name        // App initialization - manual users only
-        document.addEventListener('DOMContentLoaded', function() {
-            loadCachedUsers(); // Load offline data first
-            checkExistingSession();
-            setupLoginForm();
-            
-            console.log('✅ App loaded with manual user database');
-            console.log('👥 Available users:', Object.keys(authorizedUsers));
-            console.log('🔍 Full user data:', authorizedUsers);
-            
-            // Weekly sync removed due to CORS - using manual user management
-        });
-
-        function checkExistingSession() {ole.log('✅ App loaded with manual user database');
-            console.log('👥 Available users:', Object.keys(authorizedUsers));
-            
-            // Weekly sync removed due to CORS - using manual user management
-        });le-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="NSPIRE Pro">
     <link rel="apple-touch-icon" href="icon-192.png">
     
