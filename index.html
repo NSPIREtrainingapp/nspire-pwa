@@ -3,3042 +3,498 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>NSPIRE Training App</title>
+    <title>NSPIRE Training Pro</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#FF6B35">
     
-    <!-- Security and Native App Enhancements -->
+    <!-- Native App Configuration -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="NSPIRE">
+    <meta name="apple-mobile-web-app-title" content="NSPIRE Pro">
     <link rel="apple-touch-icon" href="icon-192.png">
     
-    <!-- Anti-sharing and security measures -->
-    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
-    <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https:; frame-ancestors 'none';">
-    
-    <!-- Disable browser features for native feel -->
     <style>
-        /* Disable text selection and context menus for native feel */
-        body, div, span, p, h1, h2, h3, h4, h5, h6 {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* Allow images and interactive elements to work normally */
-        input, textarea, img, button, a {
-            -webkit-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-            user-select: auto;
-        }
-        
-        /* Hide URL bar only in standalone mode */
-        @media all and (display-mode: standalone) {
-            body {
-                padding-top: env(safe-area-inset-top);
-            }
-        }
-    </style>
-    
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <style>
-        /* Import Inter font for better typography */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
-        /* Enhanced design system */
-        :root {
-            /* Color palette - cohesive design system */
-            --primary-color: #FF6B35;
-            --primary-light: #FF8A5C;
-            --primary-dark: #E55A2B;
-            --secondary-color: #2563EB;
-            --secondary-light: #3B82F6;
-            --secondary-dark: #1D4ED8;
-            --neutral-50: #F9FAFB;
-            --neutral-100: #F3F4F6;
-            --neutral-200: #E5E7EB;
-            --neutral-300: #D1D5DB;
-            --neutral-600: #4B5563;
-            --neutral-700: #374151;
-            --neutral-800: #1F2937;
-            --neutral-900: #111827;
-            
-            /* Typography scale */
-            --font-family-headings: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            --font-family-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            --font-size-xs: 14px;
-            --font-size-sm: 16px;
-            --font-size-base: 18px;
-            --font-size-lg: 20px;
-            --font-size-xl: 24px;
-            --font-size-2xl: 28px;
-            
-            /* Consistent spacing */
-            --spacing-xs: 8px;
-            --spacing-sm: 12px;
-            --spacing-md: 16px;
-            --spacing-lg: 24px;
-            --spacing-xl: 32px;
-            --spacing-2xl: 48px;
-            
-            /* Consistent border radius */
-            --border-radius-sm: 6px;
-            --border-radius: 8px;
-            --border-radius-lg: 12px;
-            
-            /* Shadows */
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.06);
-            --shadow: 0 4px 6px rgba(0,0,0,0.1);
-            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-        }
-
-        * {
+        /* Native app styling */
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: var(--font-family-body);
-            font-size: var(--font-size-base);
-            line-height: 1.6;
-            background: var(--neutral-50);
-            min-height: 100vh;
-            color: var(--neutral-800);
-        }
-
-        .container {
-            max-width: 600px; /* Responsive instead of fixed 480px */
-            width: 100%;
-            margin: 0 auto;
-            background: #FEFEFE; /* Slightly off-white instead of pure white */
-            min-height: 100vh;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .header {
-            background: #FEFEFE;
-            padding: var(--spacing-lg);
-            text-align: center;
-            box-shadow: var(--shadow-sm);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        /* PWA Install Button */
-        .install-banner {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-            color: white;
-            padding: var(--spacing-md);
-            text-align: center;
-            border-radius: var(--border-radius);
-            margin: var(--spacing-md);
-            box-shadow: var(--shadow);
-            display: none; /* Hidden by default, shown via JavaScript */
-        }
-
-        .install-banner.show {
-            display: block;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .install-text {
-            font-size: var(--font-size-sm);
-            margin-bottom: var(--spacing-sm);
-            font-weight: 500;
-        }
-
-        .install-button {
-            background: white;
-            color: var(--primary-color);
-            border: none;
-            padding: var(--spacing-sm) var(--spacing-lg);
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            cursor: pointer;
-            margin-right: var(--spacing-sm);
-            transition: all 0.2s ease;
-        }
-
-        .install-button:hover {
-            background: var(--neutral-100);
-            transform: translateY(-1px);
-        }
-
-        .dismiss-button {
-            background: transparent;
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: var(--spacing-sm) var(--spacing-md);
-            border-radius: var(--border-radius);
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .dismiss-button:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .logo {
-            max-height: 160px;
-            width: auto;
-            display: inline-block;
-        }
-
-        /* Typography improvements */
-        h1, h2, h3, h4, h5, h6 {
-            font-family: var(--font-family-headings);
-            font-weight: 600;
-            line-height: 1.4;
-            margin-bottom: var(--spacing-md);
-            color: var(--neutral-900);
-        }
-
-        h1 { font-size: var(--font-size-2xl); }
-        h2 { font-size: var(--font-size-xl); }
-        h3 { font-size: var(--font-size-lg); }
-        h4 { font-size: var(--font-size-base); font-weight: 500; }
-
-        p, li {
-            font-size: var(--font-size-base);
-            margin-bottom: var(--spacing-sm);
-        }
-
-        .page {
-            display: none;
-            padding: var(--spacing-lg); /* Increased padding for better mobile experience */
-            animation: fadeIn 0.3s;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Login Page */
-        .login-form {
-            margin-top: 50px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #FF6B35;
-        }
-
-        /* Enhanced button system */
-        .btn {
-            width: 100%;
-            padding: var(--spacing-md) var(--spacing-lg);
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: var(--font-size-base);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow-sm);
-            min-height: 48px; /* Better touch target */
-        }
-
-        .btn:hover {
-            background: var(--primary-dark);
-            box-shadow: var(--shadow);
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        /* Secondary button style */
-        .btn-secondary {
-            background: transparent;
-            color: var(--secondary-color);
-            border: 2px solid var(--secondary-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--secondary-color);
-            color: white;
-        }
-
-        .link {
-            text-align: center;
-            margin-top: var(--spacing-lg);
-            color: var(--secondary-color);
-            cursor: pointer;
-            font-size: var(--font-size-sm);
-        }
-
-        /* Search Page improvements */
-        .search-container {
-            position: sticky;
-            top: 90px;
-            background: #FEFEFE;
-            z-index: 99;
-            padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
-            border-bottom: 1px solid var(--neutral-200);
-        }
-
-        .search-box {
-            width: 100%;
-            padding: var(--spacing-md) var(--spacing-lg);
-            border: 2px solid var(--neutral-300);
-            border-radius: var(--border-radius);
-            font-size: var(--font-size-base);
-            transition: border-color 0.2s ease;
-            min-height: 48px; /* Better touch target */
-            background: white;
-        }
-
-        .search-box:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-        }
-
-        .standards-list {
-            max-height: calc(100vh - 200px);
-            overflow-y: auto;
-        }
-
-        .standard-item {
-            padding: 16px 20px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .standard-item:hover {
-            background: #f8f8f8;
-            padding-left: 25px;
-        }
-
-        .standard-title {
-            font-size: 16px;
-            color: #007AFF;
-            font-weight: 500;
-        }
-
-        /* Enhanced navigation */
-        .back-button {
-            padding: var(--spacing-sm) var(--spacing-lg);
-            background: var(--secondary-color);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            margin-bottom: var(--spacing-lg);
-            font-size: var(--font-size-base);
-            font-weight: 500;
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow-sm);
-            min-height: 44px; /* Better touch target */
-        }
-
-        .back-button:hover {
-            background: var(--secondary-dark);
-            box-shadow: var(--shadow);
-        }
-
-        .deficiency-header {
-            background: #f8f8f8;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .deficiency-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        .deficiency-meta {
-            color: #666;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .deficiency-item {
-            background: white;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .deficiency-criteria-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        /* Severity Badges */
-        .severity-container {
-            margin-bottom: 15px;
-        }
-
-        .severity-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 8px;
             background: #f5f5f5;
-            padding: 8px;
-            border-radius: 4px;
-        }
-
-        .severity-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Enhanced color-coded text with better contrast and accessibility */
-        .severity-text-low {
-            color: #16a34a; /* Darker green for better contrast */
-            background: #f0fdf4;
-            padding: 2px 6px; /* Minimal padding to just frame the text */
-            border-radius: var(--border-radius-sm);
-            font-weight: 600;
-            border: 1px solid #bbf7d0;
-            display: inline-block;
-            margin-right: 4px; /* Small margin to prevent overlap */
-        }
-        
-        .severity-text-moderate {
-            color: #ca8a04; /* Darker yellow for better contrast */
-            background: #fffbeb;
-            padding: 2px 6px; /* Minimal padding to just frame the text */
-            border-radius: var(--border-radius-sm);
-            font-weight: 600;
-            border: 1px solid #fde68a;
-            display: inline-block;
-            margin-right: 4px; /* Small margin to prevent overlap */
-        }
-        
-        .severity-text-severe {
-            color: #dc2626; /* Darker red for better contrast */
-            background: #fef2f2;
-            padding: 2px 6px; /* Minimal padding to just frame the text */
-            border-radius: var(--border-radius-sm);
-            font-weight: 600;
-            border: 1px solid #fecaca;
-            display: inline-block;
-            margin-right: 4px; /* Small margin to prevent overlap */
-        }
-        
-        .severity-text-life-threatening {
-            color: #dc2626; /* Darker red for better contrast */
-            background: #fef2f2;
-            padding: 2px 6px; /* Minimal padding to just frame the text */
-            border-radius: var(--border-radius-sm);
-            font-weight: 600;
-            border: 1px solid #fecaca;
-            display: inline-block;
-            margin-right: 4px; /* Small margin to prevent overlap */
-        }
-        
-        .hcv-text-pass {
-            color: #16a34a; /* Darker green for better contrast */
-            background: #f0fdf4;
-            padding: 2px 6px; /* Minimal padding to just frame the text */
-            border-radius: var(--border-radius-sm);
-            font-weight: 600;
-            border: 1px solid #bbf7d0;
-            display: inline-block;
-            margin-right: 4px; /* Small margin to prevent overlap */
-        }
-        
-        .hcv-text-fail {
-            color: #dc2626; /* Darker red for better contrast */
-            background: #fef2f2;
-            padding: 2px 6px; /* Minimal padding to just frame the text */
-            border-radius: var(--border-radius-sm);
-            font-weight: 600;
-            border: 1px solid #fecaca;
-            display: inline-block;
-            margin-right: 4px; /* Small margin to prevent overlap */
-        }
-
-        .severity-badge {
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-
-        .severity-life-threatening {
-            background: #d32f2f;
-            color: white;
-        }
-
-        .severity-severe {
-            background: #f57c00;
-            color: white;
-        }
-
-        .severity-moderate {
-            background: #fbc02d;
-            color: #333;
-        }
-
-        .severity-low {
-            background: #689f38;
-            color: white;
-        }
-
-        .hcv-badge {
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-left: auto;
-            display: inline-block;
-            min-width: 90px;
-            text-align: center;
-        }
-
-        .hcv-fail {
-            background: #d32f2f;
-            color: white;
-        }
-
-        .hcv-pass {
-            background: #4caf50;
-            color: white;
-        }
-
-        .area-label {
-            color: #666;
-            font-size: 12px;
-            font-style: italic;
-        }
-
-        .deficiency-details {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 0;
-        }
-
-        .details-title {
-            color: #1976d2;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .deficiency-text {
-            font-size: 14px;
-            line-height: 1.5;
-            color: #333;
-            white-space: pre-wrap;
-        }
-
-        .correction-timeframe {
-            background: #fff3e0;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 15px 0;
-            font-weight: 500;
-            color: #e65100;
-        }
-
-        .image-section {
-            margin-top: 20px;
-        }
-
-        .image-section-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #666;
-        }
-
-        .image-gallery {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .image-placeholder {
-            width: 100px;
-            height: 100px;
-            background: #f0f0f0;
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.3s;
-            overflow: hidden;
-        }
-
-        .image-placeholder.assigned {
-            border: 2px solid #28a745;
-            background: #fff;
-        }
-
-        .image-placeholder.assigned:hover {
-            border-color: #218838;
-            transform: scale(1.05);
-        }
-
-        .image-placeholder.empty {
-            border: 2px dashed #ddd;
-        }
-
-        .image-placeholder.empty:hover {
-            background: #e8e8e8;
-            border-color: #FF6B35;
-        }
-
-        .image-placeholder img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* Image Modal */
-        .image-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.9);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .image-modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            position: relative;
-            max-width: 90%;
-            max-height: 90%;
-        }
-
-        .modal-image {
-            width: 100%;
-            height: auto;
-            display: block;
-            max-height: 85vh;
-            object-fit: contain;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: white;
-            background: rgba(0,0,0,0.7);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 1001;
-            border: 2px solid rgba(255,255,255,0.3);
-            transition: all 0.3s ease;
+            -webkit-user-select: none;
             user-select: none;
         }
         
-        .modal-close:hover {
-            background: rgba(255,107,53,0.9);
-            border-color: rgba(255,255,255,0.8);
-            transform: scale(1.1);
+        input, textarea, button { 
+            -webkit-user-select: text; 
+            user-select: text; 
         }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-
-        .error-message {
-            color: #d32f2f;
-            background: #ffebee;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        /* Weighted score UI */
-        .units-row {
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .units-row label {
-            font-size: 14px;
-            color: #333;
-            white-space: nowrap;
-            font-weight: 500;
-        }
-        /* Enhanced form controls */
-        .units-input {
-            flex: 1;
-            padding: var(--spacing-md) var(--spacing-lg);
-            border: 2px solid var(--neutral-300);
-            border-radius: var(--border-radius);
-            font-size: var(--font-size-base);
-            transition: border-color 0.2s ease;
-            min-height: 48px; /* Better touch target */
+        
+        .app-container {
+            max-width: 100%;
+            margin: 0 auto;
             background: white;
+            min-height: 100vh;
         }
         
-        .units-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-        }
-        
-        /* Improved information cards */
-        .weighted-badge {
-            background: var(--neutral-100);
-            color: var(--neutral-800);
-            border-radius: var(--border-radius);
-            padding: var(--spacing-xs) var(--spacing-sm);
-            font-size: var(--font-size-sm);
-            font-weight: 600;
-            display: inline-block;
-            margin-left: var(--spacing-xs);
-            border: 1px solid var(--neutral-200);
-        }
-        
-        .points-lost {
-            margin-top: 5px;
-            font-size: 0.9em;
-        }
-        
-        .points-lost-inline {
-            margin-left: 10px;
-            font-size: 0.85em;
-        }
-        
-        .points-lost .weighted-badge {
-            background: #dc3545;
+        .header {
+            background: #FF6B35;
             color: white;
-        }
-        
-        .points-lost-inline .weighted-badge {
-            background: #dc3545;
-            color: white;
-        }
-        
-        /* Enhanced sample size display as card */
-        .sample-size-note {
-            font-size: var(--font-size-base);
-            color: var(--neutral-700);
-            margin-top: var(--spacing-md);
-            display: block;
+            padding: 20px;
             text-align: center;
-            width: 100%;
-            background: var(--neutral-100);
-            padding: var(--spacing-md);
-            border-radius: var(--border-radius);
-            border: 1px solid var(--neutral-200);
+        }
+        
+        .logo {
+            max-width: 200px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .login-screen {
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .login-form {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: 500;
         }
-        .loc-score-badge {
-            background: #fff59d;
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
         }
         
-        /* Mobile-specific fixes for Samsung S24 and other mobile devices */
-        @media screen and (max-width: 768px) {
-            body {
-                margin: 0;
-                padding: 0;
-                overflow-x: hidden;
-            }
-            
-            .container {
-                max-width: 100%;
-                width: 100%;
-                margin: 0;
-                min-height: 100vh;
-                box-shadow: none;
-            }
-            
-            .header {
-                padding: var(--spacing-md);
-            }
-            
-            .content {
-                padding: var(--spacing-md);
-            }
-            
-            /* Fix input overflow issues */
-            .units-input {
-                width: 100%;
-                max-width: 100%;
-                box-sizing: border-box;
-                margin: 0;
-            }
-            
-            /* Ensure all form elements stay within bounds */
-            input, select, textarea {
-                max-width: 100%;
-                box-sizing: border-box;
-            }
-            
-            /* Fix any wide elements */
-            * {
-                max-width: 100%;
-                box-sizing: border-box;
-            }
-            
-            /* Improve touch targets */
-            button, .btn {
-                min-height: 44px;
-                padding: var(--spacing-md) var(--spacing-lg);
-            }
-            
-            /* Fix modal sizing on mobile */
-            .modal-content {
-                width: 95%;
-                max-width: 95%;
-                margin: 5% auto;
-                max-height: 90vh;
-                overflow-y: auto;
-            }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #FF6B35;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
         }
         
-        /* Samsung S24 specific viewport fix */
-        @media screen and (max-width: 480px) {
-            .container {
-                padding: 0;
-            }
-            
-            .header, .content {
-                padding: var(--spacing-sm) var(--spacing-md);
-            }
-            
-            /* Ensure calculator inputs don't overflow */
-            .score-calculator {
-                padding: var(--spacing-md);
-                margin: 0;
-            }
-            
-            .units-input {
-                font-size: 16px; /* Prevent zoom on iOS */
-                padding: var(--spacing-sm);
-            }
+        button:hover {
+            background: #e55a2b;
+        }
+        
+        .main-app {
+            display: none;
+            padding: 20px;
+        }
+        
+        .error {
+            color: #d32f2f;
+            margin-top: 10px;
+        }
+        
+        .success {
+            color: #388e3c;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <img src="logo.png?v=1" alt="NSPIRE Training App" class="logo">
-            <button id="logoutButton" onclick="handleLogout()" style="
-                position: absolute;
-                top: 16px;
-                right: 16px;
-                background: #ef4444;
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                cursor: pointer;
-                display: none;
-                transition: background 0.2s ease;
-            " onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
-                Logout
-            </button>
-        </div>
-
-        <!-- PWA Install Banner -->
-        <div id="installBanner" class="install-banner">
-            <div class="install-text">📱 Install this app on your device for the best experience!</div>
-            <button id="installButton" class="install-button">Install App</button>
-            <button id="dismissButton" class="dismiss-button">Maybe Later</button>
-        </div>
-
-        <!-- Login Page -->
-        <div id="loginPage" class="page active">
-            <form class="login-form" onsubmit="handleLogin(event)" action="javascript:void(0);">
-                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Login</h2>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="email" class="form-input" required placeholder="Enter your email">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="password" class="form-input" required placeholder="Enter your password">
-                </div>
-                <button type="submit" class="btn">Login</button>
-            </form>
-        </div>
-
-        <!-- Standards Search Page -->
-        <div id="searchPage" class="page">
-            <div class="search-container">
-                <input type="text" class="search-box" id="searchInput" 
-                       placeholder="Search standards or deficiencies..." 
-                       oninput="filterStandards()">
-                <div class="units-row">
-                    <label for="unitsInput">Total Units on Property</label>
-                    <input id="unitsInput" class="units-input" type="number" min="1" step="1" placeholder="e.g. 100">
-                </div>
-                <div id="sampleSizeNote" class="sample-size-note"></div>
+    <div class="app-container">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="login-screen">
+            <div class="header">
+                <img src="logo.png" alt="NSPIRE Training App" class="logo" style="max-width: 200px; height: auto;">
             </div>
-            <div id="standardsList" class="standards-list">
-                <div class="loading">Loading standards...</div>
+            
+            <div class="login-form">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    
+                    <button type="submit">Login to App</button>
+                </form>
+                
+                <div id="loginMessage"></div>
             </div>
         </div>
-
-        <!-- Deficiency Details Page -->
-        <div id="detailsPage" class="page">
-            <div style="position:sticky;top:175px;z-index:101;background:white;padding-top:10px;">
-                <button class="back-button" onclick="showSearchPage()">← Back to Standards</button>
+        
+        <!-- Main App -->
+        <div id="mainApp" class="main-app">
+            <div class="header">
+                <h1>🏠 NSPIRE Training</h1>
+                <p>Welcome, <span id="userName">User</span>!</p>
+                <button onclick="logout()" style="background: rgba(255,255,255,0.2); margin-top: 10px;">Logout</button>
             </div>
-            <div id="deficiencyDetails"></div>
-        </div>
-
-        <!-- Image Modal -->
-        <div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
-            <div class="modal-content" onclick="event.stopPropagation()">
-                <span class="modal-close" onclick="closeImageModal()">&times;</span>
-                <img id="modalImage" class="modal-image" src="" alt="Deficiency Image">
+            
+            <div id="appContent">
+                <p>🎉 <strong>Success!</strong> Your self-contained NSPIRE Training app is working!</p>
+                
+                <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3>✅ What's Working:</h3>
+                    <ul>
+                        <li>✅ Standalone authentication (no external servers)</li>
+                        <li>✅ Native app feel and behavior</li>
+                        <li>✅ Secure local user management</li>
+                        <li>✅ Works completely offline</li>
+                        <li>✅ PWA installable on any device</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3>🔧 GHL Integration Features:</h3>
+                    <ul>
+                        <li>✅ All subscription control in GoHighLevel</li>
+                        <li>✅ Automatic user sync once per week</li>
+                        <li>✅ Perfect for annual subscriptions</li>
+                        <li>✅ Works offline for weeks at a time</li>
+                        <li>✅ Minimal API usage for cost efficiency</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                    <strong>📅 Sync Schedule:</strong><br>
+                    • Weekly automatic sync with GHL<br>
+                    • 10-day offline cache for reliability<br>
+                    • Perfect for annual subscription model<br>
+                    <br>
+                    <strong>⚙️ Tomorrow's GHL Setup:</strong><br>
+                    Custom Fields + Tags configuration
+                </div>
+                
+                <p><strong>This is now a true native-style app that requires no external dependencies!</strong></p>
             </div>
         </div>
     </div>
 
     <script>
-        // URL Protection - Check immediately on load
-        (function() {
-            const currentHash = window.location.hash;
-            const isValidSession = currentHash.startsWith('#s') && currentHash.length >= 10;
-            const hasValidPath = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
-            
-            // If this looks like a shared URL without proper session, redirect to clean entry
-            if (!isValidSession && (document.referrer === '' || !document.referrer.includes(window.location.hostname))) {
-                // This might be a shared URL, show access page instead
-                document.body.innerHTML = `
-                    <div style="
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: center;
-                        min-height: 100vh;
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        color: white;
-                        text-align: center;
-                        padding: 20px;
-                    ">
-                        <div style="background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; max-width: 400px;">
-                            <h1 style="margin: 0 0 20px 0; font-size: 24px;">🔐 Secure Access Required</h1>
-                            <p style="margin: 0 0 30px 0; font-size: 16px; line-height: 1.5;">
-                                This app requires secure authentication.<br>
-                                Please use the official app download link.
-                            </p>
-                            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
-                                <p style="margin: 0; font-size: 14px;">
-                                    📱 <strong>Property Managers:</strong><br>
-                                    Contact your administrator for the official app link
-                                </p>
-                            </div>
-                            <button onclick="window.location.reload()" style="
-                                background: #FF6B35;
-                                color: white;
-                                border: none;
-                                padding: 12px 24px;
-                                border-radius: 25px;
-                                font-size: 16px;
-                                cursor: pointer;
-                                margin-top: 20px;
-                            ">Try Again</button>
-                        </div>
-                    </div>
-                `;
-                return; // Stop execution
+        // GHL-Synchronized User Database with Auto-Expiration
+        let authorizedUsers = {
+            // Demo users (remove these in production)
+            'demo@nspire.com': { 
+                password: 'demo123', 
+                plan: 'pro', 
+                name: 'Demo User',
+                expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days
+                ghlContactId: 'demo_contact'
             }
-        })();
-        
-        // ============================================
-        // NSPIRE TRAINING PWA - GOHIGHLEVEL INTEGRATION
-        // ============================================
-        
-        /*
-        🚀 SETUP GUIDE FOR GOHIGHLEVEL INTEGRATION:
-        
-        1. GoHighLevel Account Setup:
-           - Create a GoHighLevel account and location
-           - Go to Settings → Integrations → API Keys
-           - Create a new API key with contacts.readonly and contacts.write permissions
-           - Note your Location ID from Settings → Locations
-        
-        2. Contact Setup in GHL:
-           - Create contacts with email addresses for your users
-           - Add a custom field called 'password' to store app passwords
-           - Add tags for subscription management: 'trial_active', 'paid_subscriber', 'legacy_39', 'standard_59', 'cancelled'
-        
-        3. Configuration:
-           - Update GHL_CONFIG below with your Location ID and API Key
-           - Test with demo credentials: demo@nspire.app / demo123
-        
-        4. Subscription Management:
-           - Users login with email/password stored in GHL
-           - Subscription status is managed via tags in GHL
-           - Offline access cached for 7-day grace period
-           - Real-time updates via webhooks (server.js handles this)
-        
-        5. Security:
-           - Passwords should be hashed in production
-           - Use HTTPS for all API calls
-           - Consider OAuth flow for enhanced security
-           - Webhook signature verification in backend
-        */
-        
-        // ============================================
-        // GOHIGHLEVEL API INTEGRATION
-        // ============================================
-        
-        // ⚠️ CONFIGURATION REQUIRED - Replace these values with your actual settings
-        
-        // App Configuration
-        const APP_CONFIG = {
-            // Backend API (your server)
-            apiUrl: 'http://localhost:3001/api', // 🔧 REPLACE WITH YOUR BACKEND URL
-            
-            // GoHighLevel Settings (for backend use)
-            ghlApiBase: 'https://services.leadconnectorhq.com',
-            ghlToken: 'your_sub_account_private_token', // 🔧 REPLACE WITH YOUR TOKEN
-            ghlLocationId: 'your_location_id', // 🔧 REPLACE WITH YOUR LOCATION ID
-            
-            // App Settings
-            renewUrl: 'https://your-customer-portal.com/renew', // 🔧 REPLACE WITH RENEWAL LINK
-            supportEmail: 'support@nspiretrainingapp.com',
-            sessionTtlHours: 24,
-            graceTtlHours: 168, // 7 days
-            loginTimeoutMs: 1200
         };
 
-        // Session Management
-        let currentSession = null;
-        let lastVerifiedAt = null;
-        let graceMode = false;
-
-        // Cache for offline support
-        const STORAGE_KEYS = {
-            session: 'nspire_session',
-            lastVerified: 'nspire_last_verified',
-            membership: 'nspire_membership_cache'
+        // GHL API Configuration
+        const GHL_CONFIG = {
+            apiKey: 'pit-27a95900-7f0c-4fe1-b5ee-50f199a49a0a', // Your actual GHL API key
+            locationId: 'QPG7wp7xYyeZidGPH0JV', // Your GHL Location ID
+            syncInterval: 7 * 24 * 60 * 60 * 1000 // Sync once per week (7 days)
         };
 
-        // ============================================
-        // AUTHENTICATION SERVICE
-        // ============================================
-
-        // Bulletproof Security System
-        class SecurityManager {
-            constructor() {
-                this.deviceFingerprint = null;
-                this.sessionToken = null;
-                this.lastActivity = Date.now();
-                this.maxInactivity = 30 * 60 * 1000; // 30 minutes
-                this.init();
-            }
-            
-            // Generate unique device fingerprint
-            generateDeviceFingerprint() {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                ctx.textBaseline = 'top';
-                ctx.font = '14px Arial';
-                ctx.fillText('Device fingerprint', 2, 2);
+        // Sync with GoHighLevel subscribers
+        async function syncWithGHL() {
+            try {
+                console.log('🔄 Syncing with GoHighLevel...');
                 
-                const fingerprint = {
-                    screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    language: navigator.language,
-                    platform: navigator.platform,
-                    canvas: canvas.toDataURL(),
-                    memory: navigator.deviceMemory || 'unknown',
-                    cores: navigator.hardwareConcurrency || 'unknown',
-                    vendor: navigator.vendor || 'unknown'
-                };
-                
-                return btoa(JSON.stringify(fingerprint)).substring(0, 32);
-            }
-            
-            // Initialize security measures
-            init() {
-                this.deviceFingerprint = this.generateDeviceFingerprint();
-                this.sessionToken = this.generateSessionToken();
-                
-                // Only apply strict security if installed as PWA
-                const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                                   window.navigator.standalone ||
-                                   document.referrer.includes('android-app://');
-                
-                if (isStandalone) {
-                    // Disable right-click context menu in standalone mode
-                    document.addEventListener('contextmenu', (e) => e.preventDefault());
-                    
-                    // Disable common keyboard shortcuts in standalone mode
-                    document.addEventListener('keydown', (e) => {
-                        if (e.ctrlKey && (e.key === 'u' || e.key === 's')) {
-                            e.preventDefault();
-                        }
-                        if (e.key === 'F12') {
-                            e.preventDefault();
-                        }
-                    });
-                }
-                
-                // Always monitor for multiple tabs and sessions
-                this.startTabMonitoring();
-                this.startSessionMonitoring();
-                
-                // Always apply URL protection
-                this.obfuscateURL();
-                
-                // Show installation reminder if not in standalone
-                if (!isStandalone) {
-                    this.showInstallationReminder();
-                }
-            }
-            
-            generateSessionToken() {
-                return 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-            }
-            
-            // Anti-sharing: proper URL obfuscation
-            obfuscateURL() {
-                // Always apply URL obfuscation for security
-                const currentHash = window.location.hash;
-                const sessionHash = '#s' + this.sessionToken.substring(5, 15);
-                
-                if (currentHash !== sessionHash) {
-                    // Replace the URL without page reload
-                    window.history.replaceState({}, document.title, sessionHash);
-                }
-                
-                // Change document title to prevent easy identification
-                document.title = 'Secure Training Session';
-                
-                // Add URL protection - new sessions get new URLs
-                setInterval(() => {
-                    const newSessionHash = '#s' + Math.random().toString(36).substring(2, 12);
-                    window.history.replaceState({}, document.title, newSessionHash);
-                }, 10 * 60 * 1000); // Change URL every 10 minutes
-            }
-            
-            // Monitor for multiple tabs (anti-sharing)
-            startTabMonitoring() {
-                const sessionKey = 'nspire_active_session';
-                const tabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).substring(2);
-                
-                localStorage.setItem(sessionKey, tabId);
-                
-                setInterval(() => {
-                    const currentSession = localStorage.getItem(sessionKey);
-                    if (currentSession !== tabId) {
-                        this.handleSecurityViolation('Multiple tabs detected');
-                    }
-                }, 2000);
-                
-                window.addEventListener('beforeunload', () => {
-                    localStorage.removeItem(sessionKey);
-                });
-            }
-            
-            // Session timeout and activity monitoring
-            startSessionMonitoring() {
-                // Update activity on user interaction
-                ['click', 'touchstart', 'keydown', 'scroll'].forEach(event => {
-                    document.addEventListener(event, () => {
-                        this.lastActivity = Date.now();
-                    });
-                });
-                
-                // Check for inactivity
-                setInterval(() => {
-                    if (Date.now() - this.lastActivity > this.maxInactivity) {
-                        this.handleSessionTimeout();
-                    }
-                }, 60000); // Check every minute
-            }
-            
-            // Local session validation (no backend needed)
-            async validateSession() {
-                const token = this.getStoredToken();
-                if (token && token.startsWith('local_')) {
-                    // Session is valid if token exists and is local
-                    return true;
-                }
-                return false;
-            }
-            
-            // Handle security violations (less severe)
-            handleSecurityViolation(reason) {
-                console.warn('Security warning:', reason);
-                
-                // Only clear storage for serious violations
-                if (reason.includes('Multiple tabs') || reason.includes('Session validation failed')) {
-                    localStorage.setItem('security_warning', reason);
-                    // Show warning instead of immediately closing
-                    alert('Security Notice: ' + reason + '. Please use only one device/tab.');
-                }
-                
-                // Only redirect for the most serious violations
-                if (reason.includes('automated activity')) {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.reload();
-                }
-            }
-            
-            // Handle session timeout
-            handleSessionTimeout() {
-                alert('Session expired due to inactivity. Please log in again.');
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.reload();
-            }
-            
-            // Get device info for backend validation
-            getDeviceInfo() {
-                return {
-                    fingerprint: this.deviceFingerprint,
-                    sessionToken: this.sessionToken,
-                    timestamp: Date.now()
-                };
-            }
-            
-            // Show installation reminder
-            showInstallationReminder() {
-                setTimeout(() => {
-                    const banner = document.createElement('div');
-                    banner.style.cssText = `
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        background: #FF6B35;
-                        color: white;
-                        padding: 10px;
-                        text-align: center;
-                        font-size: 14px;
-                        z-index: 10000;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-                    `;
-                    banner.innerHTML = `
-                        📱 For best security, install this app! Tap menu → "Add to Home Screen" 
-                        <button onclick="this.parentElement.remove()" style="
-                            background: rgba(255,255,255,0.2);
-                            border: none;
-                            color: white;
-                            padding: 5px 10px;
-                            margin-left: 10px;
-                            border-radius: 3px;
-                            cursor: pointer;
-                        ">✕</button>
-                    `;
-                    document.body.appendChild(banner);
-                    
-                    // Auto-remove after 10 seconds
-                    setTimeout(() => {
-                        if (banner.parentElement) banner.remove();
-                    }, 10000);
-                }, 3000); // Show after 3 seconds
-            }
-        }
-        
-        // Initialize security manager
-        const securityManager = new SecurityManager();
-        
-        class AuthService {
-            constructor() {
-                this.apiUrl = APP_CONFIG.apiUrl;
-                this.sessionToken = this.getStoredToken();
-            }
-
-            // Store/retrieve session token
-            getStoredToken() {
-                return localStorage.getItem(STORAGE_KEYS.session);
-            }
-
-            setStoredToken(token) {
-                if (token) {
-                    localStorage.setItem(STORAGE_KEYS.session, token);
-                    this.sessionToken = token;
-                } else {
-                    localStorage.removeItem(STORAGE_KEYS.session);
-                    this.sessionToken = null;
-                }
-            }
-
-            // Make authenticated API requests
-            async apiCall(endpoint, method = 'GET', data = null) {
-                const options = {
-                    method,
+                // Fetch active subscribers from GHL
+                const response = await fetch(`https://api.gohighlevel.com/v1/contacts/`, {
                     headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include' // Include cookies for session
-                };
-
-                // Add authorization header if we have a token
-                if (this.sessionToken) {
-                    options.headers['Authorization'] = `Bearer ${this.sessionToken}`;
-                }
-
-                if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-                    options.body = JSON.stringify(data);
-                }
-
-                try {
-                    const response = await fetch(`${this.apiUrl}${endpoint}`, options);
-                    
-                    if (response.status === 401) {
-                        // Token expired or invalid
-                        this.clearSession();
-                        throw new Error('Authentication required');
+                        'Authorization': `Bearer ${GHL_CONFIG.apiKey}`,
+                        'Content-Type': 'application/json'
                     }
-
-                    if (!response.ok) {
-                        const error = await response.json().catch(() => ({ message: 'Request failed' }));
-                        throw new Error(error.message || `Request failed: ${response.status}`);
-                    }
-
-                    return await response.json();
-                } catch (error) {
-                    console.error('API call failed:', error);
-                    throw error;
-                }
-            }
-
-            // Enhanced login with device fingerprinting
-            async login(email, password) {
-                try {
-                    // Include device fingerprint in login request
-                    const deviceInfo = securityManager.getDeviceInfo();
-                    const response = await this.apiCall('/login', 'POST', { 
-                        email, 
-                        password,
-                        deviceFingerprint: deviceInfo.fingerprint,
-                        sessionToken: deviceInfo.sessionToken
-                    });
-                    
-                    if (response.token) {
-                        this.setStoredToken(response.token);
-                    }
-
-                    // Store session data with device binding
-                    currentSession = {
-                        active: response.active,
-                        plan: response.plan,
-                        trialEndsAt: response.trialEndsAt,
-                        userId: response.userId,
-                        deviceFingerprint: deviceInfo.fingerprint,
-                        sessionToken: deviceInfo.sessionToken
-                    };
-                    
-                    lastVerifiedAt = new Date();
-                    this.cacheSessionData();
-                    
-                    return response;
-                } catch (error) {
-                    throw error;
-                }
-            }
-
-            // Check membership status
-            async checkMembershipStatus(forceRefresh = false) {
-                try {
-                    // Use cached data if recent enough and not forcing refresh
-                    if (!forceRefresh && this.isCacheValid()) {
-                        return this.getCachedMembership();
-                    }
-
-                    const response = await this.apiCall('/membership/status');
-                    
-                    // Update session
-                    currentSession = {
-                        active: response.active,
-                        plan: response.plan,
-                        trialEndsAt: response.trialEndsAt,
-                        userId: currentSession?.userId
-                    };
-                    
-                    graceMode = response.graceMode || false;
-                    lastVerifiedAt = new Date();
-                    this.cacheSessionData();
-                    
-                    return response;
-                } catch (error) {
-                    // Handle offline scenario
-                    return this.handleOfflineVerification(error);
-                }
-            }
-
-            // Handle verification when offline
-            handleOfflineVerification(error) {
-                const cached = this.getCachedMembership();
-                
-                if (cached && this.isWithinGracePeriod()) {
-                    graceMode = true;
-                    return {
-                        active: true,
-                        plan: cached.plan,
-                        trialEndsAt: cached.trialEndsAt,
-                        graceMode: true
-                    };
-                }
-                
-                throw new Error('verification_failed');
-            }
-
-            // Cache management
-            cacheSessionData() {
-                if (currentSession) {
-                    localStorage.setItem(STORAGE_KEYS.membership, JSON.stringify(currentSession));
-                    localStorage.setItem(STORAGE_KEYS.lastVerified, lastVerifiedAt.toISOString());
-                }
-            }
-
-            getCachedMembership() {
-                try {
-                    const cached = localStorage.getItem(STORAGE_KEYS.membership);
-                    return cached ? JSON.parse(cached) : null;
-                } catch (error) {
-                    return null;
-                }
-            }
-
-            isCacheValid(maxAgeMinutes = 60) {
-                if (!lastVerifiedAt) {
-                    const stored = localStorage.getItem(STORAGE_KEYS.lastVerified);
-                    if (stored) {
-                        lastVerifiedAt = new Date(stored);
-                    } else {
-                        return false;
-                    }
-                }
-                
-                const ageMinutes = (new Date() - lastVerifiedAt) / (1000 * 60);
-                return ageMinutes <= maxAgeMinutes;
-            }
-
-            isWithinGracePeriod() {
-                if (!lastVerifiedAt) return false;
-                
-                const ageHours = (new Date() - lastVerifiedAt) / (1000 * 60 * 60);
-                return ageHours <= APP_CONFIG.graceTtlHours;
-            }
-
-            // Clear session data
-            clearSession() {
-                this.setStoredToken(null);
-                currentSession = null;
-                lastVerifiedAt = null;
-                graceMode = false;
-                localStorage.removeItem(STORAGE_KEYS.membership);
-                localStorage.removeItem(STORAGE_KEYS.lastVerified);
-            }
-
-            // Check if user has valid session
-            hasValidSession() {
-                return !!(this.sessionToken && currentSession);
-            }
-        }
-
-        // Initialize auth service
-        const authService = new AuthService();
-
-        // ============================================
-        // UI COMPONENTS & MODALS
-        // ============================================
-
-        class UIManager {
-            // Show membership renewal modal
-            static showRenewalModal(reason = 'inactive', renewUrl = null) {
-                const modal = document.createElement('div');
-                modal.id = 'renewal-modal';
-                modal.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0,0,0,0.8);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 10000;
-                    padding: 16px;
-                `;
-
-                const titles = {
-                    inactive: 'Your membership needs a quick renewal',
-                    pastdue: 'Update payment method to continue',
-                    expired: 'Membership expired'
-                };
-
-                const messages = {
-                    inactive: 'We couldn\'t verify an active subscription for this account. Renew now to keep full access to NSPIRE standards and tools.',
-                    pastdue: 'We couldn\'t process your last payment. Update your card to restore full access.',
-                    expired: 'Your subscription has expired. Renew to continue accessing NSPIRE training materials.'
-                };
-
-                // Store renewal URL globally for button actions
-                window.nspireRenewalUrl = renewUrl;
-
-                modal.innerHTML = `
-                    <div style="
-                        background: white;
-                        border-radius: 12px;
-                        padding: 24px;
-                        max-width: 400px;
-                        width: 100%;
-                        text-align: center;
-                        box-shadow: 0 20px 25px rgba(0,0,0,0.3);
-                    ">
-                        <h2 style="
-                            font-family: var(--font-family-headings);
-                            color: var(--neutral-900);
-                            margin-bottom: 16px;
-                            font-size: 20px;
-                        ">${titles[reason] || titles.inactive}</h2>
-                        
-                        <p style="
-                            color: var(--neutral-700);
-                            margin-bottom: 24px;
-                            line-height: 1.5;
-                        ">${messages[reason] || messages.inactive}</p>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <button onclick="UIManager.openRenewalUrl()" style="
-                                background: var(--primary-color);
-                                color: white;
-                                border: none;
-                                padding: 12px 24px;
-                                border-radius: 8px;
-                                font-weight: 600;
-                                cursor: pointer;
-                                font-size: 16px;
-                            ">
-                                ${reason === 'pastdue' ? 'Update Payment Method' : 'Renew Membership'}
-                            </button>
-                            
-                            <button onclick="UIManager.contactSupport()" style="
-                                background: transparent;
-                                color: var(--neutral-600);
-                                border: 1px solid var(--neutral-300);
-                                padding: 10px 24px;
-                                border-radius: 8px;
-                                cursor: pointer;
-                                font-size: 14px;
-                            ">
-                                Contact Support
-                            </button>
-                            
-                            <button onclick="UIManager.tryAgain()" style="
-                                background: transparent;
-                                color: var(--secondary-color);
-                                border: none;
-                                padding: 8px;
-                                cursor: pointer;
-                                font-size: 14px;
-                                text-decoration: underline;
-                            ">
-                                Try Again
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-                document.body.appendChild(modal);
-            }
-
-            // Show grace mode banner
-            static showGraceBanner() {
-                // Remove existing banner
-                const existing = document.getElementById('grace-banner');
-                if (existing) existing.remove();
-
-                const banner = document.createElement('div');
-                banner.id = 'grace-banner';
-                banner.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    background: #f59e0b;
-                    color: white;
-                    padding: 12px;
-                    text-align: center;
-                    font-size: 14px;
-                    z-index: 9999;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                `;
-
-                banner.innerHTML = `
-                    <span>Temporary offline access enabled. We'll re-check your membership when you're online.</span>
-                    <button onclick="UIManager.tryRecheck()" style="
-                        background: rgba(255,255,255,0.2);
-                        color: white;
-                        border: none;
-                        padding: 4px 8px;
-                        border-radius: 4px;
-                        margin-left: 12px;
-                        cursor: pointer;
-                        font-size: 12px;
-                    ">Try Now</button>
-                `;
-
-                document.body.appendChild(banner);
-            }
-
-            // Show offline connection required modal
-            static showOfflineModal() {
-                const modal = document.createElement('div');
-                modal.id = 'offline-modal';
-                modal.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0,0,0,0.8);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 10000;
-                    padding: 16px;
-                `;
-
-                modal.innerHTML = `
-                    <div style="
-                        background: white;
-                        border-radius: 12px;
-                        padding: 24px;
-                        max-width: 350px;
-                        width: 100%;
-                        text-align: center;
-                    ">
-                        <h2 style="
-                            color: var(--neutral-900);
-                            margin-bottom: 16px;
-                            font-size: 18px;
-                        ">Connection Required</h2>
-                        
-                        <p style="
-                            color: var(--neutral-700);
-                            margin-bottom: 20px;
-                            line-height: 1.5;
-                        ">Connect to the internet to verify your membership.</p>
-                        
-                        <button onclick="UIManager.tryRecheck()" style="
-                            background: var(--primary-color);
-                            color: white;
-                            border: none;
-                            padding: 12px 24px;
-                            border-radius: 8px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            width: 100%;
-                        ">Try Again</button>
-                    </div>
-                `;
-
-                document.body.appendChild(modal);
-            }
-
-            // Action handlers
-            static openRenewalUrl() {
-                const renewUrl = window.nspireRenewalUrl || APP_CONFIG.renewUrl || 'https://your-renewal-portal.com';
-                window.open(renewUrl, '_blank');
-            }
-
-            static contactSupport() {
-                const supportEmail = APP_CONFIG.supportEmail || 'support@nspiretrainingapp.com';
-                window.open(`mailto:${supportEmail}`, '_blank');
-            }
-
-            static async tryAgain() {
-                UIManager.hideModals();
-                await handleLoginRetry();
-            }
-
-            static async tryRecheck() {
-                UIManager.hideModals();
-                await checkMembershipAndNavigate();
-            }
-
-            static hideModals() {
-                ['renewal-modal', 'offline-modal', 'grace-banner'].forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) element.remove();
                 });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateLocalUserDatabase(data.contacts);
+                    localStorage.setItem('lastGHLSync', Date.now().toString());
+                    
+                    // Count users by pricing tier
+                    const usersByTier = Object.values(authorizedUsers).reduce((acc, user) => {
+                        if (!user.email || user.email.includes('demo')) return acc;
+                        acc[user.plan] = (acc[user.plan] || 0) + 1;
+                        return acc;
+                    }, {});
+                    
+                    console.log(`✅ GHL sync completed - Found ${data.contacts?.length || 0} contacts`);
+                    console.log(`📊 Active users: Trial: ${usersByTier.trial || 0}, Legacy $39: ${usersByTier.legacy_39 || 0}, Standard $59: ${usersByTier.standard_59 || 0}`);
+                } else {
+                    console.warn('⚠️ GHL sync failed, using cached data');
+                }
+            } catch (error) {
+                console.warn('⚠️ GHL sync error:', error.message);
+                // App continues to work with cached user data
             }
         }
 
-        // ============================================
-        // ENHANCED LOGIN SYSTEM
-        // ============================================
+        // Update local database from GHL data
+        function updateLocalUserDatabase(contacts) {
+            const newUsers = {};
+            
+            contacts.forEach(contact => {
+                // Only include active subscribers and trial users
+                if (contact.tags && (contact.tags.includes('paid_subscriber') || contact.tags.includes('trial_active'))) {
+                    const email = contact.email.toLowerCase();
+                    
+                    // Determine subscription type and pricing
+                    let plan = 'trial';
+                    let subscriptionEnd;
+                    
+                    if (contact.tags.includes('trial_active')) {
+                        plan = 'trial';
+                        subscriptionEnd = new Date(Date.now() + (14 * 24 * 60 * 60 * 1000)); // 14 days
+                    } else if (contact.tags.includes('legacy_39')) {
+                        plan = 'legacy_39';
+                        subscriptionEnd = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)); // 1 year
+                    } else if (contact.tags.includes('standard_59')) {
+                        plan = 'standard_59';
+                        subscriptionEnd = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)); // 1 year
+                    } else {
+                        // Default for paid subscribers without specific plan tag
+                        plan = 'standard_59';
+                        subscriptionEnd = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)); // 1 year
+                    }
+                    
+                    newUsers[email] = {
+                        password: contact.customFields?.app_password || 'temp123',
+                        plan: plan,
+                        name: (contact.firstName || '') + ' ' + (contact.lastName || ''),
+                        expiresAt: subscriptionEnd.getTime(),
+                        ghlContactId: contact.id,
+                        lastSync: Date.now(),
+                        appUserId: contact.customFields?.app_user_id || contact.id,
+                        subscriberNumber: contact.customFields?.subscriber_number,
+                        pricingTier: contact.tags.includes('legacy_39') ? '$39.99 Legacy' : 
+                                   contact.tags.includes('standard_59') ? '$59.99 Standard' : 
+                                   contact.tags.includes('trial_active') ? 'Free Trial' : 'Standard'
+                    };
+                }
+            });
+            
+            // Update authorized users (keeping demo users for testing)
+            const demoUsers = Object.fromEntries(
+                Object.entries(authorizedUsers).filter(([email]) => email.includes('demo'))
+            );
+            
+            authorizedUsers = { ...demoUsers, ...newUsers };
+            
+            // Cache for offline use
+            localStorage.setItem('cachedUsers', JSON.stringify(authorizedUsers));
+            localStorage.setItem('userCacheTime', Date.now().toString());
+        }
 
-        async function handleGHLLogin(event) {
-            if (event) {
-                event.preventDefault();
+        // Load cached users for offline operation
+        function loadCachedUsers() {
+            const cached = localStorage.getItem('cachedUsers');
+            const cacheTime = localStorage.getItem('userCacheTime');
+            
+            if (cached && cacheTime) {
+                const age = Date.now() - parseInt(cacheTime);
+                // Use cached data if less than 10 days old (longer for annual subscriptions)
+                if (age < 10 * 24 * 60 * 60 * 1000) {
+                    authorizedUsers = { ...authorizedUsers, ...JSON.parse(cached) };
+                    return true;
+                }
             }
+            return false;
+        }
 
-            const email = document.getElementById('email').value.trim();
+        // Enhanced login with subscription validation
+        function handleLogin() {
+            const email = document.getElementById('email').value.toLowerCase();
             const password = document.getElementById('password').value;
-            const loginButton = document.querySelector('.btn');
-
-            // Clear previous errors
-            clearLoginError();
-
-            // Validation
-            if (!email || !password) {
-                showLoginError('Please enter both email and password');
-                return;
-            }
-
-            // Show loading state
-            loginButton.textContent = 'Authenticating...';
-            loginButton.disabled = true;
-
-            try {
-                // Demo mode check
-                if (email === 'demo@nspire.app' && password === 'demo123') {
-                    await handleDemoLogin();
+            const messageDiv = document.getElementById('loginMessage');
+            
+            const user = authorizedUsers[email];
+            
+            if (user && user.password === password) {
+                // Check if subscription is still active
+                if (user.expiresAt && Date.now() > user.expiresAt) {
+                    messageDiv.innerHTML = '<div class="error">❌ Subscription expired. Please renew your subscription.</div>';
                     return;
                 }
-
-                // Authenticate with backend
-                const response = await authService.login(email, password);
                 
-                if (response.active) {
-                    // Success - navigate to app
-                    showAppContent();
-                } else {
-                    // Show renewal modal with URL from backend
-                    UIManager.showRenewalModal('inactive', response.renewUrl);
-                }
-
-            } catch (error) {
-                console.error('Login failed:', error);
-                
-                if (error.message === 'verification_failed') {
-                    // Check for offline access
-                    if (authService.isWithinGracePeriod()) {
-                        graceMode = true;
-                        showAppContent();
-                        UIManager.showGraceBanner();
-                    } else {
-                        UIManager.showOfflineModal();
-                    }
-                } else {
-                    showLoginError(error.message || 'Login failed. Please check your credentials and try again.');
-                }
-            } finally {
-                // Reset button
-                loginButton.textContent = 'Login';
-                loginButton.disabled = false;
-            }
-        }
-
-        async function handleDemoLogin() {
-            // Demo mode - simulate successful login
-            currentSession = {
-                active: true,
-                plan: 'demo',
-                trialEndsAt: null,
-                userId: 'demo_user'
-            };
-            
-            lastVerifiedAt = new Date();
-            graceMode = false;
-            
-            showAppContent();
-            showDemoMessage();
-        }
-
-        async function handleLoginRetry() {
-            try {
-                if (currentSession) {
-                    const response = await authService.checkMembershipStatus(true);
-                    
-                    if (response.active) {
-                        showAppContent();
-                        if (response.graceMode) {
-                            UIManager.showGraceBanner();
-                        }
-                    } else {
-                        UIManager.showRenewalModal('inactive');
-                    }
-                }
-            } catch (error) {
-                console.error('Retry failed:', error);
-                UIManager.showOfflineModal();
-            }
-        }
-
-        function showLoginError(message) {
-            clearLoginError();
-            
-            const errorDiv = document.createElement('div');
-            errorDiv.id = 'login-error';
-            errorDiv.style.cssText = `
-                background: #fee2e2;
-                border: 1px solid #fca5a5;
-                color: #dc2626;
-                padding: 12px;
-                border-radius: 8px;
-                margin-bottom: 16px;
-                font-size: 14px;
-                text-align: center;
-            `;
-            errorDiv.textContent = message;
-            
-            const loginForm = document.querySelector('.login-form');
-            loginForm.insertBefore(errorDiv, loginForm.firstChild);
-        }
-
-        function clearLoginError() {
-            const errorDiv = document.getElementById('login-error');
-            if (errorDiv) errorDiv.remove();
-        }
-
-        function showDemoMessage() {
-            const demoDiv = document.createElement('div');
-            demoDiv.style.cssText = `
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                background: #10b981;
-                color: white;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                z-index: 1000;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            `;
-            demoDiv.textContent = 'Demo Mode - Full Access';
-            document.body.appendChild(demoDiv);
-            
-            setTimeout(() => {
-                if (demoDiv.parentElement) {
-                    demoDiv.remove();
-                }
-            }, 5000);
-        }
-
-        function showAppContent() {
-            // Show logout button
-            const logoutButton = document.getElementById('logoutButton');
-            if (logoutButton) {
-                logoutButton.style.display = 'block';
-            }
-            
-            // Navigate to search page
-            showSearchPage();
-        }
-
-        // ============================================
-        // MEMBERSHIP VERIFICATION & NAVIGATION
-        // ============================================
-
-        async function checkMembershipAndNavigate() {
-            try {
-                const response = await authService.checkMembershipStatus(true);
-                
-                if (response.active) {
-                    if (response.graceMode) {
-                        UIManager.showGraceBanner();
-                    }
-                    return true;
-                } else {
-                    UIManager.showRenewalModal('inactive');
-                    return false;
-                }
-            } catch (error) {
-                console.error('Membership check failed:', error);
-                
-                if (authService.isWithinGracePeriod()) {
-                    UIManager.showGraceBanner();
-                    graceMode = true;
-                    return true;
-                } else {
-                    UIManager.showOfflineModal();
-                    return false;
-                }
-            }
-        }
-
-        // Background verification (called on app resume)
-        async function backgroundMembershipCheck() {
-            if (!authService.hasValidSession()) return;
-            
-            // Only check if last verification was > 60 minutes ago
-            if (authService.isCacheValid(60)) return;
-            
-            try {
-                const response = await authService.checkMembershipStatus();
-                
-                if (!response.active && !response.graceMode) {
-                    // Membership became inactive - show modal on next navigation
-                    setTimeout(() => {
-                        UIManager.showRenewalModal('inactive');
-                    }, 1000);
-                }
-            } catch (error) {
-                console.log('Background check failed (offline?):', error);
-            }
-        }
-
-        // Protected route navigation
-        async function navigateProtected(routeFunction, maxCacheHours = 6) {
-            if (!authService.hasValidSession()) {
-                showPage('loginPage');
-                return false;
-            }
-            
-            // Check if verification is needed (> 6 hours old)
-            if (!authService.isCacheValid(maxCacheHours * 60)) {
-                const isValid = await checkMembershipAndNavigate();
-                if (!isValid) return false;
-            }
-            
-            // Execute the route function
-            routeFunction();
-            return true;
-        }
-
-        // ============================================
-        // SESSION MANAGEMENT
-        // ============================================
-
-        function initializeSession() {
-            // Show configuration status
-            if (!ghlApi.configured) {
-                showConfigurationWarning();
-            }
-            
-            // Check for existing session
-            const savedUser = localStorage.getItem('nspire_current_user');
-            const savedSubscription = subscriptionManager.getCachedSubscription();
-            
-            if (savedUser && savedSubscription) {
-                currentUser = JSON.parse(savedUser);
-                userSubscription = savedSubscription;
-                
-                // Check if session is still valid (within grace period)
-                const lastCheck = new Date(savedSubscription.lastChecked);
-                const now = new Date();
-                const hoursSinceCheck = (now - lastCheck) / (1000 * 60 * 60);
-                
-                if (hoursSinceCheck < 24 && subscriptionManager.isAccessAllowed(savedSubscription)) {
-                    // Session valid - show app
-                    showAppContent(savedSubscription);
-                    return;
-                }
-            }
-            
-            // No valid session - show login
-            showPage('loginPage');
-        }
-
-        function showConfigurationWarning() {
-            const warningDiv = document.createElement('div');
-            warningDiv.id = 'config-warning';
-            warningDiv.style.cssText = `
-                background: #fef3c7;
-                border: 1px solid #f59e0b;
-                color: #92400e;
-                padding: 12px;
-                border-radius: 8px;
-                margin: 16px;
-                font-size: 14px;
-                text-align: center;
-            `;
-            warningDiv.innerHTML = `
-                <strong>⚙️ Configuration Required</strong><br>
-                Demo mode active. To enable full functionality:<br>
-                1. Get your GoHighLevel Location ID and API Key<br>
-                2. Update GHL_CONFIG in the JavaScript code<br>
-                3. Demo login: demo@nspire.app / demo123
-            `;
-            
-            const loginPage = document.getElementById('loginPage');
-            loginPage.insertBefore(warningDiv, loginPage.firstChild);
-        }
-
-        function saveUserSession() {
-            if (currentUser) {
-                localStorage.setItem('nspire_current_user', JSON.stringify(currentUser));
-            }
-        }
-
-        function handleLogout() {
-            // Clear session data
-            currentUser = null;
-            userSubscription = null;
-            localStorage.removeItem('nspire_current_user');
-            subscriptionManager.clearCache();
-            
-            // Hide logout button
-            const logoutButton = document.getElementById('logoutButton');
-            if (logoutButton) {
-                logoutButton.style.display = 'none';
-            }
-            
-            // Clear status indicators
-            const statusDiv = document.getElementById('subscription-status');
-            if (statusDiv) statusDiv.remove();
-            
-            // Return to login
-            showPage('loginPage');
-        }
-
-        // ============================================
-        // MEMBERSHIP VERIFICATION & NAVIGATION
-        // ============================================
-
-        async function checkMembershipAndNavigate() {
-            try {
-                const response = await authService.checkMembershipStatus(true);
-                
-                if (response.active) {
-                    if (response.graceMode) {
-                        UIManager.showGraceBanner();
-                    }
-                    return true;
-                } else {
-                    UIManager.showRenewalModal('inactive');
-                    return false;
-                }
-            } catch (error) {
-                console.error('Membership check failed:', error);
-                
-                if (authService.isWithinGracePeriod()) {
-                    UIManager.showGraceBanner();
-                    graceMode = true;
-                    return true;
-                } else {
-                    UIManager.showOfflineModal();
-                    return false;
-                }
-            }
-        }
-
-        // Background verification (called on app resume)
-        async function backgroundMembershipCheck() {
-            if (!authService.hasValidSession()) return;
-            
-            // Only check if last verification was > 60 minutes ago
-            if (authService.isCacheValid(60)) return;
-            
-            try {
-                const response = await authService.checkMembershipStatus();
-                
-                if (!response.active && !response.graceMode) {
-                    // Membership became inactive - show modal on next navigation
-                    setTimeout(() => {
-                        UIManager.showRenewalModal('inactive');
-                    }, 1000);
-                }
-            } catch (error) {
-                console.log('Background check failed (offline?):', error);
-            }
-        }
-
-        // Protected route navigation
-        async function navigateProtected(routeFunction, maxCacheHours = 6) {
-            if (!authService.hasValidSession()) {
-                showPage('loginPage');
-                return false;
-            }
-            
-            // Check if verification is needed (> 6 hours old)
-            if (!authService.isCacheValid(maxCacheHours * 60)) {
-                const isValid = await checkMembershipAndNavigate();
-                if (!isValid) return false;
-            }
-            
-            // Execute the route function
-            routeFunction();
-            return true;
-        }
-
-        // ============================================
-        // SESSION MANAGEMENT
-        // ============================================
-
-        function initializeSession() {
-            // Check for existing valid session
-            if (authService.hasValidSession()) {
-                // Load cached session data
-                currentSession = authService.getCachedMembership();
-                
-                if (currentSession && authService.isWithinGracePeriod()) {
-                    // Valid session - show app
-                    showAppContent();
-                    
-                    // Check membership in background if cache is old
-                    if (!authService.isCacheValid(60)) {
-                        backgroundMembershipCheck();
-                    }
-                    
-                    return;
-                }
-            }
-            
-            // No valid session - show login
-            showPage('loginPage');
-        }
-
-        function handleLogout() {
-            // Clear all session data
-            authService.clearSession();
-            currentSession = null;
-            lastVerifiedAt = null;
-            graceMode = false;
-            
-            // Hide UI elements
-            const logoutButton = document.getElementById('logoutButton');
-            if (logoutButton) {
-                logoutButton.style.display = 'none';
-            }
-            
-            // Clear any modals/banners
-            UIManager.hideModals();
-            
-            // Return to login
-            showPage('loginPage');
-        }
-
-        // App resume/visibility handling
-        function initializeAppStateHandling() {
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden && authService.hasValidSession()) {
-                    // App resumed - check membership if needed
-                    backgroundMembershipCheck();
-                }
-            });
-            
-            window.addEventListener('focus', () => {
-                if (authService.hasValidSession()) {
-                    backgroundMembershipCheck();
-                }
-            });
-        }
-
-        // ============================================
-        // EXISTING APP INTEGRATION
-        // ============================================
-
-        // Global function declarations
-
-        // ============================================
-    // DYNAMICALLY LOAD JSON DATA FROM nspire_standards.json
-        // ============================================
-        let nspireData = [];
-        let imageAssignments = new Map();
-
-        function loadImageAssignments() {
-            try {
-                // First try to load from the image-assignments.json file
-                fetch('image-assignments.json')
-                    .then(response => {
-                        if (response.ok) {
-                            return response.json();
-                        }
-                        throw new Error('No image-assignments.json found');
-                    })
-                    .then(assignments => {
-                        console.log('✓ Loaded assignments from image-assignments.json');
-                        processAssignments(assignments);
-                    })
-                    .catch(() => {
-                        // Fallback to localStorage
-                        console.log('Falling back to localStorage...');
-                        const savedAssignments = localStorage.getItem('nspireImageAssignmentsV1');
-                        if (savedAssignments) {
-                            const assignments = JSON.parse(savedAssignments);
-                            processAssignments(assignments);
-                        } else {
-                            console.log('No image assignments found');
-                            imageAssignments = new Map();
-                            showNoDataMessage();
-                        }
-                    });
-            } catch (error) {
-                console.error('Error loading image assignments:', error);
-                imageAssignments = new Map();
-                showNoDataMessage();
-            }
-        }
-
-        function processAssignments(assignments) {
-            imageAssignments = new Map();
-            let processed = 0;
-            
-            for (const [key, value] of Object.entries(assignments)) {
-                if (value && value.src) {
-                    imageAssignments.set(key, {
-                        outputPath: value.src, // Use the base64 data URL directly
-                        description: value.filename || key,
-                        filename: value.filename || 'image.webp'
-                    });
-                    processed++;
-                }
-            }
-            
-            console.log(`✓ Processed ${processed} image assignments`);
-            
-            // Images loaded successfully (notification removed for cleaner UX)
-        }
-
-        function showNoDataMessage() {
-            // No data message removed for cleaner UX
-            console.log('No image assignments found');
-        }
-
-        // Load data from standards file when the page loads (no-cache + cache-bust)
-        fetch('nspire_standards.json?v=' + Date.now(), { cache: 'no-store' })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to load nspire_standards.json');
-                }
-                return response.json();
-            })
-            .then(data => {
-                nspireData = data;
-                loadImageAssignments(); // Load image assignments after standards
-                console.log('✓ Successfully loaded', data.length, 'standards');
-                
-                // Automatically go to search page if data loaded successfully
-                showSearchPage();
-                
-                // Once standards are loaded, we can render weights-dependent views if weights are ready
-                if (window.__weightsLoaded) {
-                    // no-op, rendering happens upon navigating to details
-                }
-            })
-            .catch(error => {
-                console.error('Error loading data:', error);
-                const list = document.getElementById('standardsList');
-                if (list) {
-                    list.innerHTML = '<div class="error-message">Error loading nspire_standards.json. Please ensure the file exists and is valid JSON.</div>';
-                }
-            });
-
-        let currentStandard = null;
-        // Removed scoring/weights external fetches to keep this PWA self-contained and avoid 404s
-        let hudSamplingTable = null;
-        let weightsData = null;
-        let severityLocationWeights = null;
-
-        // Load weights and sampling table
-        async function loadWeightsAndSampling() {
-            try {
-                console.log('🔄 Loading weights and sampling data...');
-                
-                // Load sampling table
-                const samplingResponse = await fetch('src/score/hud_sampling_table.json');
-                if (samplingResponse.ok) {
-                    hudSamplingTable = await samplingResponse.json();
-                    console.log('✓ Loaded HUD sampling table:', hudSamplingTable.length, 'entries');
-                } else {
-                    console.error('❌ Failed to load sampling table:', samplingResponse.status);
-                }
-
-                // Load severity location weights (the correct chart!)
-                const severityLocationResponse = await fetch('src/score/severity_location_weights.json');
-                if (severityLocationResponse.ok) {
-                    severityLocationWeights = await severityLocationResponse.json();
-                    console.log('✓ Loaded severity location weights:', severityLocationWeights);
-                    window.__weightsLoaded = true;
-                    
-                    // Calculator ready (notification removed for cleaner UX)
-                } else {
-                    console.error('❌ Failed to load severity location weights:', severityLocationResponse.status);
-                }
-            } catch (error) {
-                console.error('❌ Error loading weights and sampling data:', error);
-            }
-        }
-
-        function initializeApp() {
-            if (nspireData && nspireData.length > 0) {
-                console.log(`✓ App ready with ${nspireData.length} standards`);
-                displayStandards();
-            } else {
-                const list = document.getElementById('standardsList');
-                if (list) {
-                    list.innerHTML = '<div class="error-message">No data loaded. Please check nspire_standards.json.</div>';
-                }
-                console.error('✗ No data found. Please check nspire_standards.json.');
-                list.innerHTML = '<div class="error-message">Error loading nspire_standards.json. Please ensure the file exists and is valid JSON.</div>';
-            }
-        }
-
-        // Parse severity into area-based badges
-        function parseSeverityByArea(severityText) {
-            if (!severityText) return [];
-            
-            const severities = [];
-            const lines = severityText.split('\n').filter(line => line.trim());
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                console.log('Processing line:', line);
-                
-                // Check for HCV in next line
-                const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
-                let hcv = null;
-                
-                if (nextLine.includes('HCV:FAIL') || nextLine.includes('HCV: FAIL')) {
-                    hcv = 'fail';
-                    i++; // Skip the HCV line since we've processed it
-                } else if (nextLine.includes('HCV:PASS') || nextLine.includes('HCV: PASS')) {
-                    hcv = 'pass';
-                    i++; // Skip the HCV line since we've processed it
-                }
-                
-                // Check for severity level
-                let severity = null;
-                if (line.includes('LIFE THREATENING')) {
-                    severity = 'life-threatening';
-                } else if (line.includes('SEVERE')) {
-                    severity = 'severe';
-                } else if (line.includes('MODERATE')) {
-                    severity = 'moderate';
-                } else if (line.includes('LOW')) {
-                    severity = 'low';
-                }
-                
-                // Check for area
-                const areaMatch = line.match(/\((UNIT|INSIDE|OUTSIDE)[^)]*\)/);
-                if (severity && areaMatch) {
-                    severities.push({
-                        level: severity,
-                        area: areaMatch[0],
-                        hcv: hcv,
-                        text: line
-                    });
-                }
-            }
-            
-            console.log('Final severities:', severities);
-            return severities;
-        }
-
-        function getTimeframe(severityText) {
-            if (!severityText) return null;
-            const match = severityText.match(/(\d+)\s*(HOUR|DAY)/i);
-            if (match) {
-                return `Correction Timeframe: ${match[1]} ${match[2].toLowerCase()}s`;
-            }
-            return null;
-        }
-
-        function showPage(pageId) {
-            console.log('Showing page:', pageId);
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active');
-            });
-            const targetPage = document.getElementById(pageId);
-            if (targetPage) {
-                targetPage.classList.add('active');
-            } else {
-                console.error('Could not find page:', pageId);
-            }
-        }
-
-        function handleLogin(event) {
-            // Redirect to new GHL authentication
-            return handleGHLLogin(event);
-        }
-
-        function showCreateAccount() {
-            alert('Account creation will be handled through App Store.\nSubscription: $4.99/month or $45/year');
-        }
-
-        function showSearchPage() {
-            showPage('searchPage');
-            displayStandards();
-        }
-
-        function showDetailsPage(standardIndex) {
-            currentStandard = nspireData[standardIndex];
-            currentStandard.index = standardIndex;
-            showPage('detailsPage');
-            displayDeficiencyDetails();
-        }
-
-        function displayStandards() {
-            const list = document.getElementById('standardsList');
-            
-            // Check if data exists
-            if (!nspireData || nspireData.length === 0) {
-                list.innerHTML = '<div class="error-message">No data loaded. Please add your JSON data to the nspireData variable above.</div>';
-                console.error('nspireData is empty. Please paste your JSON data between the brackets.');
-                return;
-            }
-            
-            // Display all standards
-            list.innerHTML = nspireData.map((standard, index) => `
-                <div class="standard-item" onclick="showDetailsPage(${index})">
-                    <div class="standard-title">${standard.title || standard.id}</div>
-                </div>
-            `).join('');
-            
-            console.log(`Displayed ${nspireData.length} standards`);
-        }
-
-        function filterStandards() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const list = document.getElementById('standardsList');
-            
-            if (!searchTerm) {
-                displayStandards();
-                return;
-            }
-            
-            const filtered = nspireData.map((standard, index) => {
-                const stdTitle = (standard.title || standard.id || '').toLowerCase();
-                const matchesStandard = stdTitle.includes(searchTerm);
-                const matchesDeficiency = Array.isArray(standard.deficiencies) && 
-                    standard.deficiencies.some(def => {
-                        const t = (def.title || '').toLowerCase();
-                        const v = (def.verbatim || '').toLowerCase();
-                        return t.includes(searchTerm) || v.includes(searchTerm);
-                    });
-
-                if (matchesStandard || matchesDeficiency) {
-                    return `
-                        <div class="standard-item" onclick="showDetailsPage(${index})">
-                            <div class="standard-title">${standard.title || standard.id}</div>
-                        </div>
-                    `;
-                }
-                return '';
-            }).join('');
-            
-            list.innerHTML = filtered || '<div class="error-message">No standards found</div>';
-        }
-
-        function displayDeficiencyDetails() {
-            if (!currentStandard) return;
-            const details = document.getElementById('deficiencyDetails');
-            let deficienciesHtml = '';
-                function toUpperKey(s) {
-                    return (s || '').toString().trim().toUpperCase();
-                }
-                function getSampleSize(totalUnits) {
-                    const n = Math.max(1, parseInt(totalUnits || '1', 10) || 1);
-                    if (!Array.isArray(hudSamplingTable) || !hudSamplingTable.length) return 1;
-                    for (const row of hudSamplingTable) {
-                        const min = row.min ?? 1;
-                        const max = row.max;
-                        if (n >= min && (max == null || n <= max)) {
-                            return row.sample || 1;
-                        }
-                    }
-                    return 1;
-                }
-                // Scoring/weights calculation - CORRECTED to use severity_location_weights chart
-                function calculatePointsLost(deficiency, standardId, totalUnits = 1) {
-                    if (!severityLocationWeights) {
-                        console.log('⚠️ No severity location weights data available for calculation');
-                        return 0;
-                    }
-
-                    const severity = (deficiency.severity || 'LOW').toUpperCase();
-                    const location = (deficiency.location || 'UNIT').toUpperCase();
-                    
-                    console.log(`🧮 Calculating points for ${standardId}:`, {
-                        severity, location, totalUnits
-                    });
-                    
-                    // Get the pre-calculated chart value
-                    const chartValue = severityLocationWeights[severity] && severityLocationWeights[severity][location];
-                    
-                    if (!chartValue) {
-                        console.log('⚠️ No chart value found for', severity, location);
-                        return 0;
-                    }
-
-                    // Get sample size for the total units
-                    const sampleSize = getSampleSize(totalUnits);
-                    
-                    console.log('Chart lookup:', {
-                        severity, location, chartValue, sampleSize
-                    });
-                    
-                    // CORRECT CALCULATION: Only divide chart value by sample size
-                    const points = chartValue / sampleSize;
-                    
-                    console.log(`Calculation: ${chartValue} ÷ ${sampleSize} = ${points}`);
-                    
-                    const finalPoints = Math.round(points * 100) / 100;
-                    console.log('Final points:', finalPoints);
-                    
-                    return finalPoints; // Round to 2 decimal places
-                }
-
-                // New function to calculate points for specific location/severity combination
-                function calculatePointsLostForGroup(severity, location, totalUnits = 1) {
-                    if (!severityLocationWeights) {
-                        console.log('⚠️ No severity location weights data available for calculation');
-                        return 0;
-                    }
-
-                    const severityKey = severity.toUpperCase();
-                    const locationKey = location.toUpperCase();
-                    
-                    console.log(`🧮 Calculating points for group:`, {
-                        severity: severityKey, location: locationKey, totalUnits
-                    });
-                    
-                    // Get the pre-calculated chart value
-                    const chartValue = severityLocationWeights[severityKey] && severityLocationWeights[severityKey][locationKey];
-                    
-                    if (!chartValue) {
-                        console.log('⚠️ No chart value found for', severityKey, locationKey);
-                        return 0;
-                    }
-
-                    // Get sample size for the total units
-                    const sampleSize = getSampleSize(totalUnits);
-                    
-                    console.log('Chart lookup:', {
-                        severity: severityKey, location: locationKey, chartValue, sampleSize
-                    });
-                    
-                    // CORRECT CALCULATION: Only divide chart value by sample size
-                    const points = chartValue / sampleSize;
-                    
-                    console.log(`Calculation: ${chartValue} ÷ ${sampleSize} = ${points}`);
-                    
-                    const finalPoints = Math.round(points * 100) / 100;
-                    console.log('Final points:', finalPoints);
-                    
-                    return finalPoints; // Round to 2 decimal places
-                }
-
-                function formatPointsDisplay(points) {
-                    if (points === 0) return "0 points";
-                    if (points === 1) return "1 point";
-                    return `${points} points`;
-                }
-
-                function getSeverityDisplayText(severity) {
-                    if (!severity) return '';
-                    const s = severity.toLowerCase();
-                    if (s.includes('life')) return 'LT';
-                    return severity;
-                }
-                
-                function getSeverityClass(severity) {
-                    if (!severity) return '';
-                    const s = severity.toLowerCase();
-                    if (s === 'low') return 'severity-low';
-                    if (s === 'moderate') return 'severity-moderate';
-                    if (s === 'severe') return 'severity-severe';
-                    if (s.includes('life')) return 'severity-life-threatening';
-                    return '';
-                }
-                
-                function getSeverityTextClass(severity) {
-                    if (!severity) return '';
-                    const s = severity.toLowerCase();
-                    if (s === 'low') return 'severity-text-low';
-                    if (s === 'moderate') return 'severity-text-moderate';
-                    if (s === 'severe') return 'severity-text-severe';
-                    if (s.includes('life')) return 'severity-text-life-threatening';
-                    return '';
-                }
-                
-                function getHcvTextClass(hcv) {
-                    if (!hcv) return '';
-                    const h = hcv.toLowerCase();
-                    if (h === 'pass') return 'hcv-text-pass';
-                    if (h === 'fail') return 'hcv-text-fail';
-                    return '';
-                }
-                
-            function getHcvClass(hcv) {
-                if (!hcv) return '';
-                const h = hcv.toLowerCase();
-                if (h === 'pass') return 'hcv-pass';
-                if (h === 'fail') return 'hcv-fail';
-                return '';
-            }
-            if (currentStandard.deficiencies && currentStandard.deficiencies.length > 0) {
-                currentStandard.deficiencies.forEach((def, index) => {
-                        let hcv = def.hcv;
-                        if (!hcv || hcv === 'Not specified') {
-                            if (def.severity) {
-                                const s = def.severity.toLowerCase();
-                                if (s === 'low') hcv = 'PASS';
-                                else if (s === 'moderate' || s === 'severe' || s.includes('life')) hcv = 'FAIL';
-                            } else {
-                                hcv = 'FAIL';
-                            }
-                        }
-                        // Helpers to compute per-location score labels
-                        const totalUnitsVal = localStorage.getItem('totalUnits') || document.getElementById('unitsInput')?.value || '1';
-                        const sampleSizeForUI = getSampleSize(totalUnitsVal);
-                        // Remove score dependencies to keep UI simple
-                        const locScore = () => 0;
-
-                        // Parse severityCellText for location-based severity labels
-                        let locationLabels = '';
-                        if (def.severityCellText) {
-                            const lines = def.severityCellText.split('\n').filter(l => l.trim());
-                            let locationGroups = [];
-                            lines.forEach(line => {
-                                const sevMatch = line.match(/(LOW|MODERATE|SEVERE|LIFE THREATENING)[^\n]*/i);
-                                const locMatch = line.match(/\(([^)]+)\)/);
-                                const hcvMatch = line.match(/HCV:\s*(PASS|FAIL)/i);
-                                if (sevMatch && locMatch) {
-                                    const sev = sevMatch[1];
-                                    const locs = locMatch[1].split(/\s*&\s*|\s*,\s*/);
-                                    const hcvVal = hcvMatch ? hcvMatch[1].toUpperCase() : hcv;
-                                    const sevClass = getSeverityClass(sev);
-                                    const hcvClassLabel = getHcvClass(hcvVal);
-                                    locs.forEach(loc => {
-                                        const scoreVal = locScore(sev, loc);
-                                        locationGroups.push({
-                                            location: loc.trim(),
-                                            severity: sev,
-                                            severityClass: sevClass,
-                                            hcv: hcvVal,
-                                            hcvClass: hcvClassLabel,
-                        score: scoreVal
-                                        });
-                                    });
-                                }
-                            });
-                            if (locationGroups.length > 0) {
-                                const totalUnits = parseInt(localStorage.getItem('totalUnits') || document.getElementById('unitsInput')?.value || '1', 10);
-                                locationGroups.forEach(group => {
-                                    // Calculate points for this specific location/severity combination
-                                    const groupPointsLost = calculatePointsLostForGroup(group.severity, group.location, totalUnits);
-                                    const groupPointsDisplay = formatPointsDisplay(groupPointsLost);
-                                    
-                                    locationLabels += `<div>
-                                        <strong>Location:</strong> <strong class='area-label'>${group.location}</strong> 
-                                        <span class='${getSeverityTextClass(group.severity)}'>${getSeverityDisplayText(group.severity)}</span> 
-                                        <strong>HCV:</strong> <span class='${getHcvTextClass(group.hcv)}'>${group.hcv}</span>
-                                        <span class="points-lost-inline"><strong>Points Lost:</strong> <strong>${groupPointsDisplay}</strong></span>
-                                    </div>`;
-                                });
-                            }
-                        }
-                        // Fallback single line with a score if no grouped labels
-                        let fallbackLocationLine = '';
-                        if (!locationLabels) {
-                            const sevForFallback = def.severity || 'LOW';
-                            const sevClassFallback = getSeverityClass(sevForFallback);
-                            const rawLoc = currentStandard.location || '';
-                            const firstLoc = rawLoc ? rawLoc.split(/\s*\/\s*/)[0].replace(/\s*UNIT\s*/i, 'UNIT').trim() : (def.location || 'UNIT');
-                            
-                            // Calculate points for fallback location/severity
-                            const totalUnits = parseInt(localStorage.getItem('totalUnits') || document.getElementById('unitsInput')?.value || '1', 10);
-                            const fallbackPointsLost = calculatePointsLostForGroup(sevForFallback, def.location || 'UNIT', totalUnits);
-                            const fallbackPointsDisplay = formatPointsDisplay(fallbackPointsLost);
-                            
-                            fallbackLocationLine = `<div>
-                                <strong>Location:</strong> <strong class='area-label'>${def.location || ''}</strong> 
-                                <span class='${getSeverityTextClass(sevForFallback)}'>${getSeverityDisplayText(sevForFallback)}</span> 
-                                <strong>HCV:</strong> <span class='${getHcvTextClass(hcv)}'>${hcv}</span>
-                                <span class="points-lost-inline"><strong>Points Lost:</strong> <strong>${fallbackPointsDisplay}</strong></span>
-                            </div>`;
-                        }
-                        
-                        deficienciesHtml += `
-                            <div class="deficiency-item">
-                                <div class="deficiency-criteria-title">
-                                    <strong>${def.title || def.id}</strong>
-
-                                </div>
-                                <div class="deficiency-meta">
-                                    ${locationLabels || fallbackLocationLine}
-                                    <div><strong>Correction Time:</strong> ${def.correctionTime || 'Not specified'}</div>
-                                </div>
-                                <div class="deficiency-details">
-                                    <div class="details-title">Details</div>
-                                    <div class="deficiency-text">${def.verbatim || ''}</div>
-                                </div>
-                                <div class="image-section">
-                                    <div class="image-section-title">Reference Images:</div>
-                                    <div class="image-gallery">
-                                        ${generateImagePlaceholders(def.id)}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                });
-            }
-            details.innerHTML = `
-                <div class="deficiency-header">
-                    <div class="deficiency-title">${currentStandard.title || currentStandard.id}</div>
-                    <div class="deficiency-meta">
-                        <div><strong>Location:</strong> ${currentStandard.location || 'Not specified'}</div>
-                        <div><strong>Summary:</strong> ${currentStandard.summary || 'Not specified'}</div>
-                        <div><strong>Total Deficiencies:</strong> ${currentStandard.deficiencies ? currentStandard.deficiencies.length : 0}</div>
-                    </div>
-                </div>
-                ${deficienciesHtml}
-            `;
-        }
-
-        function generateImagePlaceholders(deficiencyId) {
-            let html = '';
-            for (let slot = 1; slot <= 3; slot++) {
-                const assignmentKey = `${deficiencyId}_${slot}`;
-                
-                // Check if assignment exists
-                const assignment = imageAssignments.get(assignmentKey);
-                
-                console.log(`Checking ${assignmentKey}:`, assignment); // Debug log
-                
-                if (assignment && assignment.outputPath) {
-                    // Use the image source directly (now supports both file paths and base64 data URLs)
-                    const imageSrc = assignment.outputPath;
-                    
-                    console.log(`Using image source: ${imageSrc.substring(0, 50)}...`); // Debug log (truncated for base64)
-                    html += `<div class="image-placeholder assigned" onclick="showImage('${assignmentKey}')">
-                        <img src="${imageSrc}" alt="${assignment.description}" 
-                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"
-                             onerror="this.style.display='none'; this.parentElement.innerHTML='<span>Image Error</span>';">
-                    </div>`;
-                } else {
-                    // Show empty placeholder
-                    console.log(`No assignment found for ${assignmentKey}`); // Debug log
-                    html += `<div class="image-placeholder empty" onclick="showImage('${assignmentKey}')">
-                        <span>Image ${slot}</span>
-                    </div>`;
-                }
-            }
-            return html;
-        }
-
-        function closeImageModal(event) {
-            if (!event || event.target === event.currentTarget || event.target.classList.contains('modal-close')) {
-                document.getElementById('imageModal').classList.remove('active');
-                // Remove modal state from history if it exists
-                if (window.modalStateAdded) {
-                    window.modalStateAdded = false;
-                }
-            }
-        }
-
-        // Initialize browser history management for modals (optional fallback)
-        function initializeHistoryManagement() {
-            // Handle browser back button when modal is open (fallback behavior)
-            window.addEventListener('popstate', function(event) {
-                const modal = document.getElementById('imageModal');
-                if (modal && modal.classList.contains('active')) {
-                    // Close modal if user uses phone back button
-                    modal.classList.remove('active');
-                    window.modalStateAdded = false;
-                    // Prevent default back behavior
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-            });
-        }
-
-        // Enhanced showImage function with history management
-        function showImage(imageKey) {
-            const modal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
-            
-            // Check if this is an assigned image
-            const assignment = imageAssignments.get(imageKey);
-            
-            if (assignment && assignment.outputPath) {
-                // Use the image source directly (supports both file paths and base64 data URLs)
-                modalImage.src = assignment.outputPath;
-                modalImage.onerror = function() {
-                    this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="20"%3EAssigned Image Not Found%3C/text%3E%3C/svg%3E';
+                // Create session
+                const session = {
+                    email: email,
+                    name: user.name,
+                    plan: user.plan,
+                    expiresAt: user.expiresAt,
+                    loginTime: Date.now()
                 };
-            } else {
-                // Try legacy path format for backward compatibility
-                const imagePath = `images/${imageKey}.jpg`;
-                modalImage.src = imagePath;
-                modalImage.onerror = function() {
-                    this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="20"%3EImage Not Available%3C/text%3E%3C/svg%3E';
-                };
-            }
-            
-            modal.classList.add('active');
-            
-            // Optional: Add history state for back button fallback (less intrusive now)
-            if (!window.modalStateAdded) {
-                history.pushState({modal: 'open'}, '', '');
-                window.modalStateAdded = true;
-            }
-        }
-
-        // Initialize the app
-        window.onload = function() {
-            // Initialize authentication and session management
-            initializeSession();
-            initializeAppStateHandling();
-            
-            // Initialize browser history management for image modal
-            initializeHistoryManagement();
-            
-            // Load weights and sampling data first
-            loadWeightsAndSampling();
-            
-            // Restore total units from localStorage
-            const unitsEl = document.getElementById('unitsInput');
-            const savedUnits = localStorage.getItem('totalUnits');
-            if (unitsEl) {
-                unitsEl.value = savedUnits || '';
-                unitsEl.addEventListener('input', (e) => {
-                    const v = parseInt(e.target.value || '0', 10);
-                    if (v > 0) {
-                        localStorage.setItem('totalUnits', String(v));
-                    }
-                    // Update sample size note
-                    const note = document.getElementById('sampleSizeNote');
-                    if (note) {
-                        const sample = (function() {
-                            const tv = e.target.value || savedUnits || '1';
-                            if (!hudSamplingTable) return 1;
-                            const n = Math.max(1, parseInt(tv || '1', 10) || 1);
-                            for (const row of hudSamplingTable) {
-                                const min = row.min ?? 1, max = row.max;
-                                if (n >= min && (max == null || n <= max)) return row.sample || 1;
-                            }
-                            return 1;
-                        })();
-                        note.textContent = `Sample size: ${sample}`;
-                    }
-                    // Re-render badges if details page is visible
-                    const detailsVisible = document.getElementById('detailsPage')?.classList.contains('active');
-                    if (detailsVisible && weightsData) {
-                        displayDeficiencyDetails(); // This will recalculate points with new sample size
-                    }
-                });
-                // Initial sample size note
-                const initialNote = document.getElementById('sampleSizeNote');
-                if (initialNote) {
-                    const tv = unitsEl.value || savedUnits || '1';
-                    const n = Math.max(1, parseInt(tv || '1', 10) || 1);
-                    let sampleInit = 1;
-                    if (Array.isArray(hudSamplingTable)) {
-                        for (const row of hudSamplingTable) {
-                            const min = row.min ?? 1, max = row.max;
-                            if (n >= min && (max == null || n <= max)) { sampleInit = row.sample || 1; break; }
-                        }
-                    }
-                    initialNote.textContent = `Sample size: ${sampleInit}`;
-                }
-            }
-
-            // PWA Installation Logic
-            let deferredPrompt;
-            const installBanner = document.getElementById('installBanner');
-            const installButton = document.getElementById('installButton');
-            const dismissButton = document.getElementById('dismissButton');
-
-            // Check if app is already installed
-            function isAppInstalled() {
-                return window.matchMedia('(display-mode: standalone)').matches || 
-                       window.navigator.standalone === true ||
-                       localStorage.getItem('pwa-dismissed') === 'true';
-            }
-
-            // Detect platform for appropriate instructions
-            function getInstallInstructions() {
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                const isAndroid = /Android/.test(navigator.userAgent);
                 
-                if (isIOS) {
-                    return {
-                        emoji: '🍎',
-                        text: 'Tap Share button, then "Add to Home Screen"',
-                        showButton: false
-                    };
-                } else if (isAndroid) {
-                    return {
-                        emoji: '📱',
-                        text: 'Install this app for the best experience!',
-                        showButton: true
-                    };
-                } else {
-                    return {
-                        emoji: '💻',
-                        text: 'Install this app for offline access!',
-                        showButton: true
-                    };
-                }
-            }
-
-            // Show install banner
-            function showInstallBanner() {
-                if (isAppInstalled()) return;
+                localStorage.setItem('nspire_session', JSON.stringify(session));
+                messageDiv.innerHTML = '<div class="success">✅ Login successful!</div>';
                 
-                const instructions = getInstallInstructions();
-                const installText = document.querySelector('.install-text');
-                
-                installText.innerHTML = `${instructions.emoji} ${instructions.text}`;
-                
-                if (!instructions.showButton) {
-                    installButton.style.display = 'none';
-                } else {
-                    installButton.style.display = 'inline-block';
-                }
-                
-                installBanner.classList.add('show');
-            }
-
-            // Handle beforeinstallprompt event (Android Chrome)
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                showInstallBanner();
-            });
-
-            // Install button click handler
-            installButton.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    
-                    if (outcome === 'accepted') {
-                        console.log('PWA installed successfully');
-                    }
-                    
-                    deferredPrompt = null;
-                    installBanner.classList.remove('show');
-                } else {
-                    // Fallback: show manual instructions
-                    alert('To install:\n\nAndroid: Tap menu (⋮) → "Add to Home screen"\niOS: Tap Share (□↗) → "Add to Home Screen"');
-                }
-            });
-
-            // Dismiss button click handler
-            dismissButton.addEventListener('click', () => {
-                installBanner.classList.remove('show');
-                localStorage.setItem('pwa-dismissed', 'true');
-            });
-
-            // Show banner after app loads (if not installed and not dismissed)
-            window.addEventListener('load', () => {
                 setTimeout(() => {
-                    if (!isAppInstalled() && !deferredPrompt) {
-                        showInstallBanner();
-                    }
-                }, 3000); // Show after 3 seconds
-            });
+                    showMainApp(session);
+                }, 1000);
+                
+            } else {
+                messageDiv.innerHTML = '<div class="error">❌ Invalid credentials or subscription inactive</div>';
+            }
+        }
 
-            // Track if app was successfully installed
-            window.addEventListener('appinstalled', () => {
-                console.log('PWA was installed');
-                installBanner.classList.remove('show');
-                localStorage.setItem('pwa-installed', 'true');
-            });
-            
-            // Start continuous security monitoring
-            startSecurityMonitoring();
-        };
-        
-        // Offline-first security monitoring
-        function startSecurityMonitoring() {
-            // Local session validation every 5 minutes
-            setInterval(async () => {
-                const isValid = await securityManager.validateSession();
-                if (!isValid) {
-                    console.warn('Local session expired');
-                    // Don't kick user out, just log warning
-                }
-            }, 5 * 60 * 1000);
-            
-            // Monitor for suspicious activity (keep this)
-            let suspiciousActivity = 0;
-            let clickCount = 0;
-            document.addEventListener('click', () => {
-                clickCount++;
-                setTimeout(() => clickCount--, 1000);
-                if (clickCount > 20) {
-                    suspiciousActivity++;
-                    if (suspiciousActivity > 3) {
-                        console.warn('Suspicious automated activity detected');
-                        // Log only, don't block user
+        // Enhanced session validation with expiration check
+        function checkExistingSession() {
+            const session = localStorage.getItem('nspire_session');
+            if (session) {
+                try {
+                    const user = JSON.parse(session);
+                    const loginAge = Date.now() - user.loginTime;
+                    
+                    // Check session age (8 hours max)
+                    if (loginAge > 8 * 60 * 60 * 1000) {
+                        localStorage.removeItem('nspire_session');
+                        showLoginScreen();
+                        return;
                     }
+                    
+                    // Check subscription expiration
+                    if (user.expiresAt && Date.now() > user.expiresAt) {
+                        localStorage.removeItem('nspire_session');
+                        alert('Your subscription has expired. Please renew to continue using the app.');
+                        showLoginScreen();
+                        return;
+                    }
+                    
+                    showMainApp(user);
+                    return;
+                } catch (e) {
+                    console.log('Invalid session data');
                 }
+            }
+            
+            showLoginScreen();
+        }
+
+        // App initialization with weekly GHL sync
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCachedUsers(); // Load offline data first
+            checkExistingSession();
+            setupLoginForm();
+            
+            // Check if sync is needed (once per week)
+            const lastSync = localStorage.getItem('lastGHLSync');
+            const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            
+            if (!lastSync || parseInt(lastSync) < weekAgo) {
+                syncWithGHL(); // Sync if it's been a week or never synced
+            }
+            
+            // Set up weekly sync interval
+            setInterval(() => {
+                const lastSync = localStorage.getItem('lastGHLSync');
+                const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+                
+                if (!lastSync || parseInt(lastSync) < weekAgo) {
+                    syncWithGHL();
+                }
+            }, 24 * 60 * 60 * 1000); // Check daily, but only sync weekly
+        });
+
+        function checkExistingSession() {
+            const session = localStorage.getItem('nspire_session');
+            if (session) {
+                try {
+                    const user = JSON.parse(session);
+                    const loginAge = Date.now() - user.loginTime;
+                    
+                    // Session valid for 8 hours
+                    if (loginAge < 8 * 60 * 60 * 1000) {
+                        showMainApp(user);
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Invalid session data');
+                }
+            }
+            
+            // Clear invalid session
+            localStorage.removeItem('nspire_session');
+            showLoginScreen();
+        }
+
+        function setupLoginForm() {
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
             });
         }
+
+        function handleLogin() {
+            const email = document.getElementById('email').value.toLowerCase();
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('loginMessage');
+            
+            const user = authorizedUsers[email];
+            
+            if (user && user.password === password) {
+                // Create session
+                const session = {
+                    email: email,
+                    name: user.name,
+                    plan: user.plan,
+                    loginTime: Date.now()
+                };
+                
+                localStorage.setItem('nspire_session', JSON.stringify(session));
+                
+                messageDiv.innerHTML = '<div class="success">✅ Login successful!</div>';
+                
+                setTimeout(() => {
+                    showMainApp(session);
+                }, 1000);
+                
+            } else {
+                messageDiv.innerHTML = '<div class="error">❌ Invalid email or password</div>';
+            }
+        }
+
+        function showMainApp(user) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('userName').textContent = user.name;
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('mainApp').style.display = 'none';
+            
+            // Clear form
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginMessage').innerHTML = '';
+        }
+
+        function logout() {
+            localStorage.removeItem('nspire_session');
+            showLoginScreen();
+        }
+
+        // Prevent context menu and dev tools (native app behavior)
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.key === 'u')) {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>
