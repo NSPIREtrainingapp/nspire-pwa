@@ -1050,13 +1050,13 @@
         
         3. Configuration:
            - Update GHL_CONFIG below with your Location ID and API Key
-           - Test with demo credentials: demo@nspire.app / demo123
+           - Production mode: All access requires valid GHL-generated license keys
         
         4. Subscription Management:
-           - Users login with email/password stored in GHL
-           - Subscription status is managed via tags in GHL
-           - Offline access cached for 7-day grace period
-           - Real-time updates via webhooks (server.js handles this)
+           - Users activate with GHL-generated license keys
+           - License validation enforces device limits and expiration
+           - Anti-tamper protection prevents unauthorized access
+           - Real-time validation with device fingerprinting
         
         5. Security:
            - Passwords should be hashed in production
@@ -1430,36 +1430,8 @@
 
             // Check if GHL is configured
             if (!ghlApi.configured) {
-                // Demo mode for testing
-                if (email === 'demo@nspire.app' && password === 'demo123') {
-                    const demoUser = {
-                        id: 'demo_user_123',
-                        email: 'demo@nspire.app',
-                        firstName: 'Demo',
-                        lastName: 'User',
-                        dateAdded: new Date().toISOString()
-                    };
-                    
-                    const demoSubscription = {
-                        contactId: 'demo_user_123',
-                        email: 'demo@nspire.app',
-                        status: 'active',
-                        tier: 'standard',
-                        expiresAt: null,
-                        inGracePeriod: false,
-                        tags: ['paid_subscriber', 'standard_59'],
-                        lastChecked: new Date().toISOString()
-                    };
-                    
-                    currentUser = demoUser;
-                    userSubscription = demoSubscription;
-                    
-                    showAppContent(demoSubscription);
-                    return;
-                } else {
-                    showLoginError('Demo mode: Use demo@nspire.app / demo123 or configure GoHighLevel API');
-                    return;
-                }
+                showLoginError('System configuration required. Please contact support.');
+                return;
             }
 
             // Show loading state
@@ -2273,9 +2245,36 @@ Contact support for subscription assistance.`);
             static getStoredLicense() {
                 try {
                     const stored = localStorage.getItem('nspire_license');
-                    return stored ? JSON.parse(stored) : null;
+                    if (!stored) return null;
+                    
+                    const license = JSON.parse(stored);
+                    
+                    // Validate stored license integrity
+                    if (!license.key || !license.deviceFingerprint || !license.activatedAt) {
+                        console.warn('Invalid license structure detected');
+                        localStorage.removeItem('nspire_license');
+                        return null;
+                    }
+                    
+                    // Re-validate format to prevent tampering
+                    if (!this.validateLicenseFormat(license.key)) {
+                        console.warn('License format validation failed');
+                        localStorage.removeItem('nspire_license');
+                        return null;
+                    }
+                    
+                    // Verify device fingerprint hasn't been tampered with
+                    const currentDevice = DeviceFingerprinting.generateFingerprint();
+                    if (license.deviceFingerprint !== currentDevice) {
+                        console.warn('Device fingerprint mismatch detected');
+                        localStorage.removeItem('nspire_license');
+                        return null;
+                    }
+                    
+                    return license;
                 } catch (error) {
                     console.error('Error reading stored license:', error);
+                    localStorage.removeItem('nspire_license');
                     return null;
                 }
             }
@@ -2414,6 +2413,18 @@ Contact support for subscription assistance.`);
                 return;
             }
             
+            // Pre-validation: Strict GHL format check
+            if (!LicenseManager.validateLicenseFormat(licenseKey)) {
+                showLicenseMessage('❌ Invalid license key format. Must be NSPIRE-2025-XXXXXX-XXXXXX-XXXXXX', 'error');
+                return;
+            }
+            
+            // Additional security: Check for common bypass attempts
+            if (licenseKey.includes('TEST') && !licenseKey.includes('DEMO')) {
+                showLicenseMessage('❌ Invalid license key. Please use a valid GHL-generated key.', 'error');
+                return;
+            }
+            
             try {
                 showLicenseMessage('Validating license...', 'info');
                 
@@ -2458,11 +2469,7 @@ Contact support for subscription assistance.`);
             showMainApp(demoLicense);
         }
         
-        function testActivation() {
-            document.getElementById('licenseKeyInput').value = 'NSPIRE-2025-DEMO01-TEST01-TRIAL1';
-            activateLicense();
-        }
-        
+        // Production License Activation Only - No Test Functions
         function showMainApp(licenseInfo) {
             // Hide license page and show main app
             document.getElementById('loginPage').classList.remove('active');
