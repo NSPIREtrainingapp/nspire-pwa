@@ -1,0 +1,20 @@
+{
+  "totalImages": 626,
+  "totalChunks": 13,
+  "imagesPerChunk": 50,
+  "chunks": [
+    "chunk-1.json",
+    "chunk-2.json",
+    "chunk-3.json",
+    "chunk-4.json",
+    "chunk-5.json",
+    "chunk-6.json",
+    "chunk-7.json",
+    "chunk-8.json",
+    "chunk-9.json",
+    "chunk-10.json",
+    "chunk-11.json",
+    "chunk-12.json",
+    "chunk-13.json"
+  ]
+}
