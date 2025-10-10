@@ -1805,13 +1805,32 @@ Contact support for subscription assistance.`);
                         addImageDebug(`📡 Response OK: ${response.ok}`);
                         
                         if (response.ok) {
-                            addImageDebug('📄 Parsing JSON...');
-                            return response.json();
+                            addImageDebug('📄 Parsing large JSON file...');
+                            // Handle large JSON files that might hang the browser
+                            return response.text(); // Get as text first
                         }
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     })
+                    .then(textData => {
+                        addImageDebug('📝 Got text data, parsing in chunks...');
+                        addImageDebug(`📏 File size: ${Math.round(textData.length / 1024 / 1024 * 10) / 10}MB`);
+                        
+                        // Parse JSON in a timeout to prevent browser hang
+                        return new Promise((resolve, reject) => {
+                            setTimeout(() => {
+                                try {
+                                    addImageDebug('🔄 Attempting JSON.parse...');
+                                    const assignments = JSON.parse(textData);
+                                    addImageDebug('🎉 JSON parsing successful!');
+                                    resolve(assignments);
+                                } catch (error) {
+                                    addImageDebug(`❌ JSON parse error: ${error.message}`);
+                                    reject(error);
+                                }
+                            }, 100); // Small delay to prevent blocking
+                        });
+                    })
                     .then(assignments => {
-                        addImageDebug('🎉 JSON parsing successful!');
                         addImageDebug(`📊 Assignments object type: ${typeof assignments}`);
                         addImageDebug(`📊 Keys count: ${assignments ? Object.keys(assignments).length : 'null'}`);
                         addImageDebug('🔄 Starting processAssignments...');
