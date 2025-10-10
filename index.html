@@ -2419,12 +2419,6 @@ Contact support for subscription assistance.`);
                 return;
             }
             
-            // Additional security: Check for common bypass attempts
-            if (licenseKey.includes('TEST') && !licenseKey.includes('DEMO')) {
-                showLicenseMessage('❌ Invalid license key. Please use a valid GHL-generated key.', 'error');
-                return;
-            }
-            
             try {
                 showLicenseMessage('Validating license...', 'info');
                 
