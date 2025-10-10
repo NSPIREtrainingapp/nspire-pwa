@@ -2528,17 +2528,18 @@ Contact support for subscription assistance.`);
             // Clear any existing license for testing
             LicenseManager.clearLicense();
             
-            // Force show license activation page
-            document.getElementById('loginPage').classList.add('active');
-            document.getElementById('searchPage').classList.remove('active');
-            
-            // Check for existing valid license (disabled for now)
-            // const existingLicense = LicenseManager.getStoredLicense();
-            // if (existingLicense && LicenseManager.isLicenseValid(existingLicense)) {
-            //     showMainApp(existingLicense);
-            // } else {
-            //     LicenseManager.clearLicense();
-            // }
+            // Check for existing valid license on startup
+            const existingLicense = LicenseManager.getStoredLicense();
+            if (existingLicense && LicenseManager.isLicenseValid(existingLicense)) {
+                console.log('✓ Found valid stored license, proceeding to main app');
+                showMainApp(existingLicense);
+            } else {
+                console.log('❌ No valid stored license found, showing activation page');
+                LicenseManager.clearLicense();
+                // Force show license activation page
+                document.getElementById('loginPage').classList.add('active');
+                document.getElementById('searchPage').classList.remove('active');
+            }
         });
         
         // Disable context menu and common shortcuts
