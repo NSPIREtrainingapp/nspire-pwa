@@ -1811,9 +1811,13 @@ Contact support for subscription assistance.`);
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     })
                     .then(assignments => {
-                        addImageDebug(`✅ JSON parsed! Count: ${Object.keys(assignments).length}`);
+                        addImageDebug('🎉 JSON parsing successful!');
+                        addImageDebug(`📊 Assignments object type: ${typeof assignments}`);
+                        addImageDebug(`📊 Keys count: ${assignments ? Object.keys(assignments).length : 'null'}`);
+                        addImageDebug('🔄 Starting processAssignments...');
+                        
                         processAssignments(assignments);
-                        addImageDebug('✅ Processing complete!');
+                        addImageDebug('✅ processAssignments complete!');
                         
                         // Add close button after success
                         setTimeout(() => {
@@ -1844,8 +1848,18 @@ Contact support for subscription assistance.`);
         }
 
         function processAssignments(assignments) {
+            // Add debug info to existing debug box
+            const debugDiv = document.getElementById('image-debug');
+            if (debugDiv) {
+                debugDiv.innerHTML += '🔧 Starting processAssignments...<br>';
+            }
+            
             imageAssignments = new Map();
             let processed = 0;
+            
+            if (debugDiv) {
+                debugDiv.innerHTML += `📋 Total entries to process: ${Object.keys(assignments).length}<br>`;
+            }
             
             for (const [key, value] of Object.entries(assignments)) {
                 if (value && value.src) {
@@ -1856,6 +1870,11 @@ Contact support for subscription assistance.`);
                     });
                     processed++;
                 }
+            }
+            
+            if (debugDiv) {
+                debugDiv.innerHTML += `✅ Processed ${processed} image assignments<br>`;
+                debugDiv.innerHTML += `🗺️ Map size: ${imageAssignments.size}<br>`;
             }
             
             console.log(`✓ Processed ${processed} image assignments`);
