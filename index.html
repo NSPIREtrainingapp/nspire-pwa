@@ -1857,7 +1857,9 @@ Contact support for subscription assistance.`);
             console.error('❌ No image data available - check network tab and console for fetch errors');
         }
 
-        // Load data from standards file when the page loads (no-cache + cache-bust)
+        // Data loading moved to loadAppData() - only load after license validation
+        // Original immediate loading commented out to prevent loading before license check
+        /*
         fetch('nspire_standards.json?v=' + Date.now(), { cache: 'no-store' })
             .then(response => {
                 if (!response.ok) {
@@ -1885,6 +1887,7 @@ Contact support for subscription assistance.`);
                     list.innerHTML = '<div class="error-message">Error loading nspire_standards.json. Please ensure the file exists and is valid JSON.</div>';
                 }
             });
+        */
 
         let currentStandard = null;
         // Removed scoring/weights external fetches to keep this PWA self-contained and avoid 404s
@@ -2488,8 +2491,33 @@ Contact support for subscription assistance.`);
             // Display license status
             displayLicenseStatus(licenseInfo);
             
-            // Continue with normal app initialization - only after license validation
-            showSearchPage();
+            // Load data after successful license validation
+            console.log('🔄 Loading app data after license validation...');
+            loadAppData();
+        }
+        
+        function loadAppData() {
+            // Load data from standards file when license is validated
+            fetch('nspire_standards.json?v=' + Date.now(), { cache: 'no-store' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load nspire_standards.json');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    nspireData = data;
+                    console.log('✓ Successfully loaded', data.length, 'standards');
+                    
+                    // Load image assignments after standards
+                    loadImageAssignments();
+                    
+                    // Show the search page now that data is loaded
+                    showSearchPage();
+                })
+                .catch(error => {
+                    console.error('Error loading app data:', error);
+                });
         }
         
         function displayLicenseStatus(licenseInfo) {
