@@ -2525,8 +2525,6 @@ Contact support for subscription assistance.`);
         
         // Initialize license system
         document.addEventListener('DOMContentLoaded', function() {
-            // Clear any existing license for testing
-            LicenseManager.clearLicense();
             
             // Check for existing valid license on startup
             const existingLicense = LicenseManager.getStoredLicense();
