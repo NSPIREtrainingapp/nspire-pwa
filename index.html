@@ -1779,27 +1779,38 @@ Contact support for subscription assistance.`);
 
         function loadImageAssignments() {
             try {
-                // First try to load from the image-assignments.json file
-                fetch('image-assignments.json')
+                console.log('🔄 Starting to load image assignments...');
+                // First try to load from the image-assignments.json file with cache busting
+                const cacheBuster = '?v=' + Date.now();
+                fetch('image-assignments.json' + cacheBuster, { cache: 'no-store' })
                     .then(response => {
+                        console.log('📡 Fetch response status:', response.status, response.statusText);
+                        console.log('📡 Response OK:', response.ok);
+                        console.log('📡 Response URL:', response.url);
+                        
                         if (response.ok) {
+                            console.log('✓ Response OK, parsing JSON...');
                             return response.json();
                         }
-                        throw new Error('No image-assignments.json found');
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     })
                     .then(assignments => {
+                        console.log('✓ Successfully parsed JSON, assignments count:', Object.keys(assignments).length);
                         console.log('✓ Loaded assignments from image-assignments.json');
                         processAssignments(assignments);
                     })
-                    .catch(() => {
+                    .catch(error => {
+                        console.error('❌ Error loading image-assignments.json:', error);
+                        console.log('🔄 Falling back to localStorage...');
+                        
                         // Fallback to localStorage
-                        console.log('Falling back to localStorage...');
                         const savedAssignments = localStorage.getItem('nspireImageAssignmentsV1');
                         if (savedAssignments) {
+                            console.log('✓ Found saved assignments in localStorage');
                             const assignments = JSON.parse(savedAssignments);
                             processAssignments(assignments);
                         } else {
-                            console.log('No image assignments found');
+                            console.log('❌ No image assignments found in localStorage');
                             imageAssignments = new Map();
                             showNoDataMessage();
                         }
@@ -1839,9 +1850,11 @@ Contact support for subscription assistance.`);
             debugDiv.innerHTML = `
                 <strong>❌ No Image Data</strong><br>
                 No assignments found in file or localStorage<br>
+                Check browser console for detailed error info<br>
                 <button onclick="this.parentElement.remove()" style="color:white; background:transparent; border:1px solid white;">×</button>
             `;
             document.body.appendChild(debugDiv);
+            console.error('❌ No image data available - check network tab and console for fetch errors');
         }
 
         // Load data from standards file when the page loads (no-cache + cache-bust)
