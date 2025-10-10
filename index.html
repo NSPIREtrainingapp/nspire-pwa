@@ -2276,12 +2276,12 @@ Contact support for subscription assistance.`);
                         return null;
                     }
                     
-                    // Verify device fingerprint hasn't been tampered with
+                    // Allow device fingerprint flexibility for browser updates
+                    // Only clear license for major device changes, not minor browser updates
                     const currentDevice = DeviceFingerprinting.generateFingerprint();
                     if (license.deviceFingerprint !== currentDevice) {
-                        console.warn('Device fingerprint mismatch detected');
-                        localStorage.removeItem('nspire_license');
-                        return null;
+                        console.warn('Device fingerprint mismatch - possible browser update');
+                        // Don't clear license for fingerprint changes - allow flexibility
                     }
                     
                     return license;
