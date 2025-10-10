@@ -1779,38 +1779,59 @@ Contact support for subscription assistance.`);
 
         function loadImageAssignments() {
             try {
-                console.log('🔄 Starting to load image assignments...');
+                // Create visible debug display
+                let debugDiv = document.getElementById('image-debug');
+                if (!debugDiv) {
+                    debugDiv = document.createElement('div');
+                    debugDiv.id = 'image-debug';
+                    debugDiv.style.cssText = 'position:fixed; top:10px; left:10px; background:green; color:white; padding:10px; z-index:10000; max-width:400px; font-size:11px; font-family:monospace;';
+                    document.body.appendChild(debugDiv);
+                }
+                
+                function addImageDebug(msg) {
+                    debugDiv.innerHTML += msg + '<br>';
+                }
+                
+                addImageDebug('🔄 Starting to load image assignments...');
+                
                 // First try to load from the image-assignments.json file with cache busting
                 const cacheBuster = '?v=' + Date.now();
-                fetch('image-assignments.json' + cacheBuster, { cache: 'no-store' })
+                const url = 'image-assignments.json' + cacheBuster;
+                addImageDebug('📡 Fetching: ' + url);
+                
+                fetch(url, { cache: 'no-store' })
                     .then(response => {
-                        console.log('📡 Fetch response status:', response.status, response.statusText);
-                        console.log('📡 Response OK:', response.ok);
-                        console.log('📡 Response URL:', response.url);
+                        addImageDebug(`📡 Response status: ${response.status} ${response.statusText}`);
+                        addImageDebug(`📡 Response OK: ${response.ok}`);
                         
                         if (response.ok) {
-                            console.log('✓ Response OK, parsing JSON...');
+                            addImageDebug('📄 Parsing JSON...');
                             return response.json();
                         }
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     })
                     .then(assignments => {
-                        console.log('✓ Successfully parsed JSON, assignments count:', Object.keys(assignments).length);
-                        console.log('✓ Loaded assignments from image-assignments.json');
+                        addImageDebug(`✅ JSON parsed! Count: ${Object.keys(assignments).length}`);
                         processAssignments(assignments);
+                        addImageDebug('✅ Processing complete!');
+                        
+                        // Add close button after success
+                        setTimeout(() => {
+                            debugDiv.innerHTML += '<br><button onclick="this.parentElement.remove()" style="background:white; color:green; border:none; padding:3px;">Close Debug</button>';
+                        }, 2000);
                     })
                     .catch(error => {
-                        console.error('❌ Error loading image-assignments.json:', error);
-                        console.log('🔄 Falling back to localStorage...');
+                        addImageDebug(`❌ Fetch error: ${error.message}`);
+                        addImageDebug('🔄 Trying localStorage...');
                         
                         // Fallback to localStorage
                         const savedAssignments = localStorage.getItem('nspireImageAssignmentsV1');
                         if (savedAssignments) {
-                            console.log('✓ Found saved assignments in localStorage');
+                            addImageDebug('✅ Found localStorage data');
                             const assignments = JSON.parse(savedAssignments);
                             processAssignments(assignments);
                         } else {
-                            console.log('❌ No image assignments found in localStorage');
+                            addImageDebug('❌ No localStorage data');
                             imageAssignments = new Map();
                             showNoDataMessage();
                         }
