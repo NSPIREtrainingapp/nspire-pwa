@@ -1827,8 +1827,8 @@ Contact support for subscription assistance.`);
                 debug(`🎉 Chunked loading complete! ${totalLoaded} images loaded from ${loadedChunks} chunks`, 'green');
                 
                 if (totalLoaded > 0) {
-                    window.imageAssignments = allImageAssignments;
                     processAssignments(allImageAssignments);
+                    debug(`🎯 Successfully loaded ${totalLoaded} images from chunked system`, 'green');
                     return allImageAssignments;
                 } else {
                     debug('⚠️ No images loaded from chunks, using fallback', 'orange');
@@ -1856,7 +1856,6 @@ Contact support for subscription assistance.`);
                 };
             }
             
-            window.imageAssignments = fallbackAssignments;
             processAssignments(fallbackAssignments);
             
             debug('✅ Created 626 placeholder image assignments', 'orange');
@@ -1937,18 +1936,12 @@ Contact support for subscription assistance.`);
         }
 
         function processAssignments(assignments) {
-            // Add debug info to existing debug box
-            const debugDiv = document.getElementById('image-debug');
-            if (debugDiv) {
-                debugDiv.innerHTML += '🔧 Starting processAssignments...<br>';
-            }
+            debug('🔧 Starting processAssignments...', 'blue');
+            debug(`📋 Total entries to process: ${Object.keys(assignments).length}`, 'blue');
             
+            // Clear existing assignments
             imageAssignments = new Map();
             let processed = 0;
-            
-            if (debugDiv) {
-                debugDiv.innerHTML += `📋 Total entries to process: ${Object.keys(assignments).length}<br>`;
-            }
             
             for (const [key, value] of Object.entries(assignments)) {
                 if (value && value.src) {
@@ -1958,18 +1951,23 @@ Contact support for subscription assistance.`);
                         filename: value.filename || 'image.webp'
                     });
                     processed++;
+                } else {
+                    debug(`⚠️ Invalid entry: ${key} - missing src`, 'orange');
                 }
             }
             
-            if (debugDiv) {
-                debugDiv.innerHTML += `✅ Processed ${processed} image assignments<br>`;
-                debugDiv.innerHTML += `🗺️ Map size: ${imageAssignments.size}<br>`;
-            }
+            debug(`✅ Processed ${processed} image assignments`, 'green');
+            debug(`🗺️ Map size: ${imageAssignments.size}`, 'green');
             
             console.log(`✓ Processed ${processed} image assignments`);
             
-            // Debug message disabled to prevent notifications
-            // Green banner with "Images Loaded" message removed
+            // Show success message if we have images
+            if (processed > 0) {
+                debug(`🎉 Image processing complete! ${processed} images ready for training`, 'green');
+            } else {
+                debug('❌ No valid images found in assignments', 'red');
+                showNoDataMessage();
+            }
         }
 
         function showNoDataMessage() {
